@@ -1,2 +1,4 @@
-__pycache__/ && *.db && node_modules/
+backend/__pycache__/
+backend/financas.db
+financa/node_modules/
 
