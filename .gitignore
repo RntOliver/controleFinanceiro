@@ -1,0 +1,2 @@
+__pycache__/ && *.db && node_modules/
+
