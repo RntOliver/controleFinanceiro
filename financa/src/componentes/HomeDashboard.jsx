@@ -127,7 +127,7 @@ function HomeDashboard({ token, usernameLogado, isAdmin, onLogout }) {
     }
   };
 
-  // ❌ DELETAR LANÇAMENTO DO BANCO POR ID (MARCO 3)
+  // ❌ DELETAR LANÇAMENTO DO BANCO POR ID
   const excluirTransacao = async (idParaRemover) => {
     if (!confirm("⚠️ Tem certeza que deseja excluir este lançamento?")) return;
 
@@ -155,7 +155,7 @@ function HomeDashboard({ token, usernameLogado, isAdmin, onLogout }) {
 
   return (
     <div className="home-dashboard-wrapper">
-      {/* HEADER DINÂMICO CONFORME O CARGO (MARCO 4) */}
+      {/* HEADER DINÂMICO CONFORME O CARGO */}
       <header className="topo-dashboard">
         <div className="info-topo">
           <h2>
@@ -232,6 +232,8 @@ function HomeDashboard({ token, usernameLogado, isAdmin, onLogout }) {
                 </strong>
                 .
               </p>
+
+              {/* CORREÇÃO APLICADA AQUI NO RESUMO GLOBAL */}
               <div className="mini-resumo-valores">
                 <span className="texto-verde">
                   Receitas: R$ {metricas.totalReceita.toFixed(2)}
@@ -243,7 +245,7 @@ function HomeDashboard({ token, usernameLogado, isAdmin, onLogout }) {
                 {" | "}
                 <span
                   className={
-                    metricas.totalLucro >= 0 ? "texto-verde" : "texto-vermelho"
+                    metricas.totalLucro < 0 ? "texto-vermelho" : "texto-verde"
                   }
                 >
                   Sobra: R$ {metricas.totalLucro.toFixed(2)}
@@ -315,10 +317,14 @@ function HomeDashboard({ token, usernameLogado, isAdmin, onLogout }) {
                 </span>
                 <span>Receita: R$ {t.salario?.toFixed(2)}</span>
                 <span>Despesa: R$ {t.despesa?.toFixed(2)}</span>
+
+                {/* CORREÇÃO APLICADA AQUI NA RENDERIZAÇÃO DA LINHA */}
                 <span
-                  className={t.Lucro >= 0 ? "lucro-positivo" : "lucro-negativo"}
+                  className={
+                    t.salario - t.despesa < 0 ? "texto-vermelho" : "texto-verde"
+                  }
                 >
-                  Lucro: R$ {t.Lucro?.toFixed(2)}
+                  Lucro: R$ {(t.salario - t.despesa).toFixed(2)}
                 </span>
 
                 <button
