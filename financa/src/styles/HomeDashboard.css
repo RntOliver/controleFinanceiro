@@ -1,0 +1,157 @@
+.home-dashboard-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  height: 100%;
+}
+
+/* TOPO */
+.topo-dashboard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 1rem;
+}
+
+.topo-dashboard h2 {
+  font-size: 1.75rem;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.topo-dashboard p {
+  color: #94a3b8;
+  margin: 0.25rem 0 0 0;
+  font-size: 0.9rem;
+}
+
+.botao-voltar-filtro {
+  background-color: #334155;
+  color: #f8fafc;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* GRIDS DE COMPONENTES */
+.grid-central {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* Usuário comum vê Gráfico + Formulário */
+  gap: 1.5rem;
+}
+
+.grid-central-admin {
+  display: grid;
+  grid-template-columns: 1fr; /* Admin vê apenas o gráfico expandido */
+  gap: 1.5rem;
+}
+
+.bloco-grafico-real, .bloco-formulario {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.bloco-grafico-real h3, .bloco-formulario h3 {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  font-size: 1.1rem;
+  color: #f8fafc;
+}
+
+/* INTELIGÊNCIA FINANCEIRA */
+.bloco-estatisticas-dinamico {
+  margin-top: 1rem;
+  background-color: #0f172a;
+  padding: 1rem;
+  border-radius: 6px;
+  border-left: 4px solid #f97316;
+  font-size: 0.9rem;
+}
+
+.mini-resumo-valores {
+  margin-top: 0.5rem;
+  font-weight: bold;
+}
+
+.texto-verde, .lucro-positivo { color: #22c55e; }
+.texto-vermelho, .lucro-negativo { color: #ef4444; }
+
+/* FORMULÁRIO DE LANÇAMENTO */
+.formulario-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.formulario-inputs input {
+  padding: 0.6rem 1rem;
+  background-color: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: white;
+}
+
+.formulario-inputs button {
+  background-color: #f97316;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* HISTÓRICO / TABELA */
+footer {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.titulo-historico-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.dica-clique {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.tabela-fake {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.linha-tabela {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr auto;
+  background-color: #0f172a;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  align-items: center;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+}
+
+.linha-admin-clicavel { cursor: pointer; }
+.linha-admin-clicavel:hover { border-color: #f97316; }
+.linha-focada { border-color: #38bdf8; }
+
+.botao-excluir {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+}
