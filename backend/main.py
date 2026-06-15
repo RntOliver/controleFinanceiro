@@ -2,30 +2,39 @@ from fastapi import FastAPI, HTTPException, Depends, Header
 from pydantic import BaseModel, Field, field_validator
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, Boolean
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
 import hashlib
 import secrets
 
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
 # -----------------------------------------------------------------
-# CONFIGURAÇÃO E CONEXÃO DO BANCO DE DADOS (SQLAlchemy)
+# BANCO DE DADOS (Com nível de acesso e e-mail)
 # -----------------------------------------------------------------
 DATABASE_URL = "sqlite:///./financas.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# -----------------------------------------------------------------
-# MODELOS DE MODELAGEM DO BANCO DE DADOS (ORM)
-# -----------------------------------------------------------------
 class UsuarioDB(Base):
     __tablename__ = "usuarios"
-    
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, index=True)
-    email = Column(String, unique=True, index=True, nullable=False)
+    
+    # 🌟 CORREÇÃO 3: Adicionada a coluna física de e-mail na tabela
+    email = Column(String, unique=True, index=True, nullable=False) 
+    
     senha_criptografada = Column(String)
     token_atual = Column(String, nullable=True)
-    is_admin = Column(Boolean, default=False) 
+    is_admin = Column(Boolean, default=False) # 👑 TRUE para Administrador, FALSE para Cliente comum
 
     transacoes = relationship("FinancaDB", back_populates="dono")
 
@@ -36,42 +45,39 @@ class FinancaDB(Base):
     salario = Column(Float)
     despesa = Column(Float)
     lucro = Column(Float)
-    # 📅 CORREÇÃO BUG 1: Adicionado o campo mes na tabela física do banco de dados
-    mes = Column(String, default="Geral")
     usuario_id = Column(Integer, ForeignKey("usuarios.id"))
     
     dono = relationship("UsuarioDB", back_populates="transacoes")
 
-# Ergue as tabelas atualizadas com o campo novo
+# Ergue as tabelas limpas no banco de dados
 Base.metadata.create_all(bind=engine)
 
 # -----------------------------------------------------------------
-# CONTRATOS DE DADOS E VALIDAÇÕES (Pydantic V2)
+# CONTRATOS DE DADOS (Pydantic V2)
 # -----------------------------------------------------------------
 class Financa(BaseModel):
-    # Opcional para o Admin que digita o nome manualmente pelo Dashboard
-    nome: str | None = None 
+    nome: str
     salario: float = Field(..., ge=0)
     despesa: float = Field(..., ge=0)
-    # 📅 CORREÇÃO BUG 2: mes agora tem valor padrão para não quebrar requisições sem o campo
-    mes: str = Field(default="GERAL", min_length=3) 
 
+    @field_validator('nome')
+    def nome_nao_vazio(cls, v):
+        if not v.strip():
+            raise ValueError('O nome não pode estar vazio')
+        return v.strip().upper()
+
+# 🌟 CORREÇÃO 2: Contrato específico para o Cadastro com e-mail
 class UsuarioCadastro(BaseModel):
     username: str
-    email: str  
+    email: str
     senha: str
     is_admin: bool = False
 
-    @field_validator('username')
-    def limpar_username(cls, v):
+    @field_validator('username', 'email')
+    def limpar_campos(cls, v):
         return v.strip().lower()
 
-    @field_validator('email')
-    def validar_e_limpar_email(cls, v):
-        if "@" not in v or "." not in v:
-            raise ValueError("O formato do e-mail inserido é inválido.")
-        return v.strip().lower()
-
+# 🌟 CORREÇÃO 4: Contrato específico para o Login usando E-mail e Senha
 class UsuarioLogin(BaseModel):
     email: str
     senha: str
@@ -81,7 +87,7 @@ class UsuarioLogin(BaseModel):
         return v.strip().lower()
 
 # -----------------------------------------------------------------
-# FUNÇÕES DE SEGURANÇA E AUXILIARES
+# FUNÇÕES DE SEGURANÇA
 # -----------------------------------------------------------------
 def gerar_hash_senha(senha_pura: str) -> str:
     SALT = "rnt_finance_secret_key_2026"
@@ -104,26 +110,21 @@ async def obter_usuario_atual(authorization: str = Header(None)):
         db.close()
 
 # -----------------------------------------------------------------
-# CONFIGURAÇÃO DO SERVIDOR E ROTAS DE API
+# ROTAS DE AUTENTICAÇÃO
 # -----------------------------------------------------------------
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
-
 @app.post("/auth/registrar")
-async def registrar_usuario(usuario: UsuarioCadastro):
+async def registrar_usuario(usuario: UsuarioCadastro): 
     db = SessionLocal()
     try:
+        # 👑 REGRA DE OURO: Apenas o e-mail do Renato vira Admin Master automaticamente
+        seu_email_admin = "re83375741@gmail.com"
+        
         email_existente = db.query(UsuarioDB).filter(UsuarioDB.email == usuario.email).first()
         if email_existente:
             raise HTTPException(status_code=400, detail="Este endereço de e-mail já está cadastrado.")
         
-        tornar_admin = True if usuario.email.startswith("admin@") else usuario.is_admin
+        # 🌟 CORREÇÃO 1: Bloco try estruturado e indentado perfeitamente
+        tornar_admin = True if usuario.email.lower() == seu_email_admin else usuario.is_admin
 
         novo_usuario = UsuarioDB(
             username=usuario.username,
@@ -131,17 +132,19 @@ async def registrar_usuario(usuario: UsuarioCadastro):
             senha_criptografada=gerar_hash_senha(usuario.senha),
             is_admin=tornar_admin
         )
-        
         db.add(novo_usuario)
         db.commit()
+        
         return {"mensagem": f"Usuário {'Administrador' if tornar_admin else 'Cliente'} registrado com sucesso!"}
     finally:
         db.close()
+
 
 @app.post("/auth/login")
 async def login(usuario: UsuarioLogin):
     db = SessionLocal()
     try:
+        # 🌟 CORREÇÃO 4: Login modificado para buscar estritamente pelo e-mail vindo do React
         usuario_banco = db.query(UsuarioDB).filter(UsuarioDB.email == usuario.email).first()
         if not usuario_banco:
             raise HTTPException(status_code=400, detail="E-mail ou senha incorretos.")
@@ -159,6 +162,7 @@ async def login(usuario: UsuarioLogin):
             "username": usuario_banco.username, 
             "is_admin": usuario_banco.is_admin
         }
+        
     except HTTPException as http_err:
         raise http_err
     except Exception as e:
@@ -168,41 +172,30 @@ async def login(usuario: UsuarioLogin):
         db.close()
 
 # -----------------------------------------------------------------
-# ROTAS FINANCEIRAS
+# ROTAS FINANCEIRAS COM INTELIGÊNCIA DE NÍVEL DE ACESSO
 # -----------------------------------------------------------------
 @app.post("/calcular")
 async def calcular(item: Financa, usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
     lucro_calculado = item.salario - item.despesa
     db = SessionLocal()
     try:
-        # Define se o nome vem do input (Admin) ou do próprio usuário logado (Cliente)
-        nome_final = item.nome.upper() if item.nome else usuario_atual.username.upper()
-
         nova_transacao = FinancaDB(
-            nome=nome_final,
+            nome=item.nome,
             salario=item.salario,
             despesa=item.despesa,
             lucro=lucro_calculado,
-            usuario_id=usuario_atual.id,
-            mes=item.mes.upper()
+            usuario_id=usuario_atual.id 
         )
         db.add(nova_transacao)
         db.commit()
         db.refresh(nova_transacao)
-        
-        return {
-            "id": nova_transacao.id, 
-            "nome": nova_transacao.nome, 
-            "salario": nova_transacao.salario, 
-            "despesa": nova_transacao.despesa, 
-            "Lucro": nova_transacao.lucro, # "Lucro" com L maiúsculo para espelhar a tabela fake do React
-            "mes": nova_transacao.mes 
-        }
+        return {"id": nova_transacao.id, "nome": nova_transacao.nome, "salario": nova_transacao.salario, "despesa": nova_transacao.despesa, "Lucro": nova_transacao.lucro}
     finally:
         db.close()
 
+
 @app.get("/transacoes")
-async def obtener_transacoes(usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
+async def obter_transacoes(usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
     db = SessionLocal()
     try:
         if usuario_atual.is_admin:
@@ -210,9 +203,10 @@ async def obtener_transacoes(usuario_atual: UsuarioDB = Depends(obter_usuario_at
         else:
             historico = db.query(FinancaDB).filter(FinancaDB.usuario_id == usuario_atual.id).all()
             
-        return [{"id": t.id, "nome": t.nome, "salario": t.salario, "despesa": t.despesa, "Lucro": t.lucro, "mes": t.mes} for t in historico]
+        return [{"id": t.id, "nome": t.nome, "salario": t.salario, "despesa": t.despesa, "Lucro": t.lucro} for t in historico]
     finally:
         db.close()
+
 
 @app.delete("/transacoes/{id_transacao}")
 async def deletar_transacao(id_transacao: int, usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
