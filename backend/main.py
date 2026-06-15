@@ -41,14 +41,15 @@ class UsuarioDB(Base):
 class FinancaDB(Base):
     __tablename__ = "transacoes"
     id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String, index=True)
-    salario = Column(Float)
+    nome = Column(String, index=True)      # Guarda o username automaticamente
+    mes = Column(String, index=True)       # 🌟 Novo: Ex: "JANEIRO"
+    dia = Column(Integer)                  # 🌟 Novo: Ex: 15
+    salario = Column(Float, default=0.0)   # Ficará zerado até criarmos a tela de perfil
     despesa = Column(Float)
     lucro = Column(Float)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"))
     
     dono = relationship("UsuarioDB", back_populates="transacoes")
-
 # Ergue as tabelas limpas no banco de dados
 Base.metadata.create_all(bind=engine)
 
@@ -56,14 +57,14 @@ Base.metadata.create_all(bind=engine)
 # CONTRATOS DE DADOS (Pydantic V2)
 # -----------------------------------------------------------------
 class Financa(BaseModel):
-    nome: str
-    salario: float = Field(..., ge=0)
-    despesa: float = Field(..., ge=0)
+    mes: str
+    dia: int = Field(..., ge=1, le=31)  # Valida se o dia está entre 1 e 31
+    despesa: float = Field(..., ge=0)   # Não permite gasto negativo
 
-    @field_validator('nome')
-    def nome_nao_vazio(cls, v):
+    @field_validator('mes')
+    def mes_nao_vazio(cls, v):
         if not v.strip():
-            raise ValueError('O nome não pode estar vazio')
+            raise ValueError('O mês precisa ser selecionado')
         return v.strip().upper()
 
 # 🌟 CORREÇÃO 2: Contrato específico para o Cadastro com e-mail
@@ -176,12 +177,16 @@ async def login(usuario: UsuarioLogin):
 # -----------------------------------------------------------------
 @app.post("/calcular")
 async def calcular(item: Financa, usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
-    lucro_calculado = item.salario - item.despesa
+    salario_atual = 0.0 
+    lucro_calculado = salario_atual - item.despesa # R$ 0 - Gasto = Sobra
+    
     db = SessionLocal()
     try:
         nova_transacao = FinancaDB(
-            nome=item.nome,
-            salario=item.salario,
+            nome=usuario_atual.username.upper(), # Injeta o nome do dono do Token
+            mes=item.mes,
+            dia=item.dia,
+            salario=salario_atual,
             despesa=item.despesa,
             lucro=lucro_calculado,
             usuario_id=usuario_atual.id 
@@ -189,21 +194,43 @@ async def calcular(item: Financa, usuario_atual: UsuarioDB = Depends(obter_usuar
         db.add(nova_transacao)
         db.commit()
         db.refresh(nova_transacao)
-        return {"id": nova_transacao.id, "nome": nova_transacao.nome, "salario": nova_transacao.salario, "despesa": nova_transacao.despesa, "Lucro": nova_transacao.lucro}
+        
+        # Retorna exatamente o formato que o React espera ler e colocar na tabela
+        return {
+            "id": nova_transacao.id, 
+            "nome": nova_transacao.nome, 
+            "mes": nova_transacao.mes,
+            "dia": nova_transacao.dia,
+            "salario": nova_transacao.salario, 
+            "despesa": nova_transacao.despesa, 
+            "lucro": nova_transacao.lucro
+        }
     finally:
         db.close()
 
 
 @app.get("/transacoes")
-async def obter_transacoes(usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
+async def listar_transacoes(usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
     db = SessionLocal()
     try:
+        # Se for o Admin Renato, vê tudo. Se for cliente, vê só as dele.
         if usuario_atual.is_admin:
-            historico = db.query(FinancaDB).all()
+            transacoes = db.query(FinancaDB).all()
         else:
-            historico = db.query(FinancaDB).filter(FinancaDB.usuario_id == usuario_atual.id).all()
+            transacoes = db.query(FinancaDB).filter(FinancaDB.usuario_id == usuario_atual.id).all()
             
-        return [{"id": t.id, "nome": t.nome, "salario": t.salario, "despesa": t.despesa, "Lucro": t.lucro} for t in historico]
+        return [
+            {
+                "id": t.id,
+                "nome": t.nome,
+                "mes": t.mes,
+                "dia": t.dia,
+                "salario": t.salario,
+                "despesa": t.despesa,
+                "lucro": t.lucro
+            }
+            for t in transacoes
+        ]
     finally:
         db.close()
 
