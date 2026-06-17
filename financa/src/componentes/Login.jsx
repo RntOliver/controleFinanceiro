@@ -1,30 +1,31 @@
 import { useState } from "react";
-import "../styles/Login.css"; // Certifique-se de que o CSS está apontado corretamente
+import "../styles/Login.css";
+
+// CORREÇÃO 1: Como você está usando Vite, a forma de ler a variável de ambiente é com import.meta.env
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function Login({ onLoginSuccess }) {
-  // 1. ESTADOS DO REACT (Memória local do componente)
-  const [isCadastro, setIsCadastro] = useState(false); // Controla se mostra a tela de Login (false) ou Cadastro (true)
+  const [isCadastro, setIsCadastro] = useState(false);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mensagemErro, setMensagemErro] = useState("");
   const [mensagemSucesso, setMensagemSucesso] = useState("");
 
-  // Função auxiliar para resetar o formulário completamente
   const limparFormulario = () => {
     setUsername("");
     setEmail("");
     setSenha("");
   };
 
-  // 2. FUNÇÃO DE CADASTRO (Disparada no envio do formulário de registro)
-  const ejecutarCadastro = async (e) => {
-    e.preventDefault(); // Evita o recarregamento padrão da página
+  // CORREÇÃO 2: Ajuste do nome para "executarCadastro"
+  const executarCadastro = async (e) => {
+    e.preventDefault();
     setMensagemErro("");
     setMensagemSucesso("");
 
     try {
-      const resposta = await fetch("http://localhost:8000/auth/registrar", {
+      const resposta = await fetch(`${API_BASE_URL}/auth/registrar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, senha }),
@@ -37,21 +38,20 @@ function Login({ onLoginSuccess }) {
       }
 
       setMensagemSucesso(dados.mensagem || "Cadastro realizado com sucesso!");
-      setIsCadastro(false); // Retorna para a tela de login automaticamente
-      limparFormulario(); // Limpa todos os campos por segurança e usabilidade
+      setIsCadastro(false);
+      limparFormulario();
     } catch (err) {
       setMensagemErro(err.message);
     }
   };
 
-  // 3. FUNÇÃO DE LOGIN (Disparada no envio do formulário de login)
   const executarLogin = async (e) => {
     e.preventDefault();
     setMensagemErro("");
     setMensagemSucesso("");
 
     try {
-      const resposta = await fetch("http://localhost:8000/auth/login", {
+      const resposta = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, senha }),
@@ -63,7 +63,6 @@ function Login({ onLoginSuccess }) {
         throw new Error(dados.detail || "E-mail ou senha incorretos.");
       }
 
-      // Garantimos o mapeamento seguro das chaves vindas do ecossistema Python FastAPI
       const token = dados.token || dados.access_token;
       const userLogado = dados.username || username;
       const papelAdmin = dados.is_admin ?? false;
@@ -74,7 +73,6 @@ function Login({ onLoginSuccess }) {
     }
   };
 
-  // 4. RENDERIZAÇÃO VISUAL (HTML Dinâmico)
   return (
     <div className="login-wrapper">
       <div className="card-autenticacao">
@@ -85,15 +83,12 @@ function Login({ onLoginSuccess }) {
             : "Insira suas credenciais de acesso"}
         </p>
 
-        {/* FEEDBACKS VISUAIS */}
         {mensagemErro && <div className="alerta-erro">⚠️ {mensagemErro}</div>}
         {mensagemSucesso && (
           <div className="alerta-sucesso">✅ {mensagemSucesso}</div>
         )}
 
-        {/* FORMULÁRIO DINÂMICO */}
-        <form onSubmit={isCadastro ? ejecutarCadastro : executarLogin}>
-          {/* Campo de Username (Exclusivo do Cadastro) */}
+        <form onSubmit={isCadastro ? executarCadastro : executarLogin}>
           {isCadastro && (
             <div className="grupo-input">
               <label>Nome de Usuário</label>
@@ -107,7 +102,6 @@ function Login({ onLoginSuccess }) {
             </div>
           )}
 
-          {/* Campo de E-mail */}
           <div className="grupo-input">
             <label>Endereço de E-mail</label>
             <input
@@ -119,7 +113,6 @@ function Login({ onLoginSuccess }) {
             />
           </div>
 
-          {/* Campo de Senha */}
           <div className="grupo-input">
             <label>Senha de Segurança</label>
             <input
@@ -136,7 +129,6 @@ function Login({ onLoginSuccess }) {
           </button>
         </form>
 
-        {/* BOTÃO ALTERNADOR DE TELAS */}
         <div className="alternador-tela">
           {isCadastro ? (
             <p>
