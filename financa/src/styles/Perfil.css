@@ -1,124 +1,218 @@
 /* ==========================================================================
-   ESTILIZAÇÃO DA TELA DE USUÁRIO (PERFIL) - LIGHT THEME
+   ESTILIZAÇÃO OPÇÃO 3: PERFIL FINANCEIRO PROFISSIONAL (DARK THEME)
    ========================================================================== */
 
 .perfil-container {
-    padding: 20px;
-}
-
-.perfil-topo {
-    margin-bottom: 30px;
-}
-
-.perfil-topo h2 {
-    font-size: 26px;
-    color: #0f172a;
-    margin-bottom: 10px;
-}
-
-.perfil-topo p {
-    color: #475569;
-    max-width: 600px;
-}
-
-/* Layout de Duas Colunas (Cartão + Formulário) */
-.perfil-layout {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 40px;
-    align-items: start;
-}
-
-/* Cartão de Identificação */
-.perfil-cartao {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
     padding: 30px;
-    border-radius: 12px;
+    background-color: #0d111a; /* Fundo escuro profundo combinando com a dashboard */
+    min-height: 100vh;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Topo do Perfil com alinhamento flexível */
+.perfil-topo {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    text-align: center;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    margin-bottom: 35px;
+    border-bottom: 1px solid #1e293b;
+    padding-bottom: 20px;
 }
 
-.perfil-avatar {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    font-weight: bold;
-    color: white;
-    margin-bottom: 15px;
-}
-
-.perfil-cartao h3 {
-    margin: 10px 0;
-    color: #0f172a;
-}
-
-/* Badges estilizadas */
-.perfil-admin {
-    background-color: #fef3c7;
-    color: #d97706;
-    font-size: 11px;
-    font-weight: 800;
-    padding: 4px 12px;
-    border-radius: 12px;
-}
-
-.perfil-usuario {
-    background-color: #e0f2fe;
-    color: #0369a1;
-    font-size: 11px;
+.perfil-conteudo h2 {
+    font-size: 28px;
     font-weight: 700;
-    padding: 4px 12px;
-    border-radius: 12px;
+    color: #ffffff;
+    margin-bottom: 6px;
 }
 
-/* Ajuste fino para os campos dentro do formulário */
-.grupo-formulario {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Dividir em 2 colunas para ficar elegante */
-    gap: 20px;
-}
-
-/* Garantir que inputs ocupem o espaço corretamente */
-.grupo-formulario label {
-    display: block;
-    font-weight: 600;
-    color: #334155;
-    margin-bottom: 8px;
+.perfil-conteudo p {
+    color: #94a3b8;
     font-size: 14px;
 }
 
-/* Estilo dos inputs reaproveitando o padrão que já definimos */
-.grupo-formulario input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    background-color: #f8fafc;
-    box-sizing: border-box; /* Importante para o input não passar da margem */
+/* Status de atualização e botão sync */
+.perfil-status-atualizacao {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #64748b;
+    font-size: 13px;
 }
 
-/* Botão de Salvar */
-.formulario-inputs button {
-    margin-top: 25px;
-    background-color: #22c55e;
-    color: white;
+.btn-sync {
+    background: transparent;
     border: none;
-    padding: 14px 24px;
-    border-radius: 8px;
-    font-weight: bold;
     cursor: pointer;
-    transition: background 0.2s;
+    font-size: 16px;
+    transition: transform 0.3s ease;
 }
 
-.formulario-inputs button:hover {
-    background-color: #16a34a;
+.btn-sync:hover {
+    transform: rotate(180deg);
+}
+
+/* Layout dos blocos empilhados */
+.perfil-layout-profissional {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* Cards de Seção */
+.perfil-secao-card {
+    background-color: #141b2d; /* Cinza azulado escuro identico a imagem */
+    border: 1px solid #1f293d;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Cabeçalho interno das seções */
+.secao-cabecalho {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #1f293d;
+    padding-bottom: 15px;
+}
+
+.secao-cabecalho h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.secao-icon {
+    font-size: 18px;
+}
+
+.btn-secao-editar {
+    background-color: #1e293b;
+    color: #cbd5e1;
+    border: 1px solid #334155;
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secao-editar:hover {
+    background-color: #334155;
+    color: #ffffff;
+}
+
+/* Estruturação dos Grids Dinâmicos */
+.secao-corpo {
+    display: grid;
+    gap: 20px;
+}
+
+/* Grid de 3 colunas para dados pessoais */
+.grid-tres-colunas {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* Grid de 2 colunas para dados financeiros */
+.grid-duas-colunas {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* Customização dos campos de input individuais */
+.campo-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.campo-grupo label {
+    font-size: 12px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+.campo-grupo input {
+    background-color: #1f2a45; /* Input levemente mais claro que o card */
+    border: 1px solid #2e3d5c;
+    border-radius: 8px;
+    padding: 14px;
+    color: #ffffff;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.campo-grupo input:focus {
+    border-color: #f97316; /* Destaque laranja ao focar */
+}
+
+.campo-grupo input::placeholder {
+    color: #475569;
+}
+
+/* Área inferior do botão salvar master */
+.perfil-rodape-acoes {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
+.btn-salvar-master {
+    background-color: #ff6b00; /* Laranja vibrante corporativo do seu layout */
+    color: #ffffff;
+    border: none;
+    padding: 14px 35px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-salvar-master:hover {
+    background-color: #e66000;
+}
+
+.btn-salvar-master:active {
+    transform: scale(0.98);
+}
+
+/* ==========================================================================
+   RESPONSIVIDADE (MOBILE & TABLET)
+   ========================================================================== */
+@media (max-width: 900px) {
+    .grid-tres-colunas {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .perfil-topo {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .grid-tres-colunas, .grid-duas-colunas {
+        grid-template-columns: 1fr;
+    }
+
+    .perfil-rodape-acoes {
+        justify-content: center;
+    }
+
+    .btn-salvar-master {
+        width: 100%;
+    }
 }
