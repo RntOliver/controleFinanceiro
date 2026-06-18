@@ -6,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import hashlib
 import secrets
+from typing import Optional
 
 app = FastAPI()
 
@@ -17,7 +18,7 @@ app.add_middleware(
 )
 
 # -----------------------------------------------------------------
-# BANCO DE DADOS (Com nível de acesso e e-mail)
+# BANCO DE DADOS (Com campos de Perfil inclusos)
 # -----------------------------------------------------------------
 DATABASE_URL = "sqlite:///./financas.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -28,29 +29,35 @@ class UsuarioDB(Base):
     __tablename__ = "usuarios"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, index=True)
-    
-    # 🌟 CORREÇÃO 3: Adicionada a coluna física de e-mail na tabela
     email = Column(String, unique=True, index=True, nullable=False) 
-    
     senha_criptografada = Column(String)
     token_atual = Column(String, nullable=True)
-    is_admin = Column(Boolean, default=False) # 👑 TRUE para Administrador, FALSE para Cliente comum
+    is_admin = Column(Boolean, default=False) 
+
+    # 🌟 NOVOS CAMPOS DO PERFIL NO BANCO DE DADOS
+    nome_completo = Column(String, nullable=True)
+    profissao = Column(String, nullable=True)
+    salario_base = Column(Float, default=0.0)
+    meta_economia = Column(Float, default=0.0)
+    telefone = Column(String, nullable=True)
+    foto_perfil = Column(String, nullable=True)
 
     transacoes = relationship("FinancaDB", back_populates="dono")
 
 class FinancaDB(Base):
     __tablename__ = "transacoes"
     id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String, index=True)      # Guarda o username automaticamente
-    mes = Column(String, index=True)       # 🌟 Novo: Ex: "JANEIRO"
-    dia = Column(Integer)                  # 🌟 Novo: Ex: 15
-    salario = Column(Float, default=0.0)   # Ficará zerado até criarmos a tela de perfil
+    nome = Column(String, index=True)      
+    mes = Column(String, index=True)       
+    dia = Column(Integer)                  
+    salario = Column(Float, default=0.0)   
     despesa = Column(Float)
     lucro = Column(Float)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"))
     
     dono = relationship("UsuarioDB", back_populates="transacoes")
-# Ergue as tabelas limpas no banco de dados
+
+# Ergue as tabelas no banco de dados
 Base.metadata.create_all(bind=engine)
 
 # -----------------------------------------------------------------
@@ -58,8 +65,8 @@ Base.metadata.create_all(bind=engine)
 # -----------------------------------------------------------------
 class Financa(BaseModel):
     mes: str
-    dia: int = Field(..., ge=1, le=31)  # Valida se o dia está entre 1 e 31
-    despesa: float = Field(..., ge=0)   # Não permite gasto negativo
+    dia: int = Field(..., ge=1, le=31)  
+    despesa: float = Field(..., ge=0)   
 
     @field_validator('mes')
     def mes_nao_vazio(cls, v):
@@ -67,7 +74,6 @@ class Financa(BaseModel):
             raise ValueError('O mês precisa ser selecionado')
         return v.strip().upper()
 
-# 🌟 CORREÇÃO 2: Contrato específico para o Cadastro com e-mail
 class UsuarioCadastro(BaseModel):
     username: str
     email: str
@@ -78,7 +84,6 @@ class UsuarioCadastro(BaseModel):
     def limpar_campos(cls, v):
         return v.strip().lower()
 
-# 🌟 CORREÇÃO 4: Contrato específico para o Login usando E-mail e Senha
 class UsuarioLogin(BaseModel):
     email: str
     senha: str
@@ -86,6 +91,16 @@ class UsuarioLogin(BaseModel):
     @field_validator('email')
     def limpar_email(cls, v):
         return v.strip().lower()
+
+# 🌟 NOVO: Contrato de dados para atualização do Perfil vindo do React
+class UsuarioPerfil(BaseModel):
+    nome_completo: Optional[str] = None
+    profissao: Optional[str] = None
+    salario_base: float = 0.0
+    meta_economia: float = 0.0
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    foto_perfil: Optional[str] = None
 
 # -----------------------------------------------------------------
 # FUNÇÕES DE SEGURANÇA
@@ -117,14 +132,12 @@ async def obter_usuario_atual(authorization: str = Header(None)):
 async def registrar_usuario(usuario: UsuarioCadastro): 
     db = SessionLocal()
     try:
-        # 👑 REGRA DE OURO: Apenas o e-mail do Renato vira Admin Master automaticamente
         seu_email_admin = "re83375741@gmail.com"
         
         email_existente = db.query(UsuarioDB).filter(UsuarioDB.email == usuario.email).first()
         if email_existente:
             raise HTTPException(status_code=400, detail="Este endereço de e-mail já está cadastrado.")
         
-        # 🌟 CORREÇÃO 1: Bloco try estruturado e indentado perfeitamente
         tornar_admin = True if usuario.email.lower() == seu_email_admin else usuario.is_admin
 
         novo_usuario = UsuarioDB(
@@ -140,12 +153,10 @@ async def registrar_usuario(usuario: UsuarioCadastro):
     finally:
         db.close()
 
-
 @app.post("/auth/login")
 async def login(usuario: UsuarioLogin):
     db = SessionLocal()
     try:
-        # 🌟 CORREÇÃO 4: Login modificado para buscar estritamente pelo e-mail vindo do React
         usuario_banco = db.query(UsuarioDB).filter(UsuarioDB.email == usuario.email).first()
         if not usuario_banco:
             raise HTTPException(status_code=400, detail="E-mail ou senha incorretos.")
@@ -163,7 +174,6 @@ async def login(usuario: UsuarioLogin):
             "username": usuario_banco.username, 
             "is_admin": usuario_banco.is_admin
         }
-        
     except HTTPException as http_err:
         raise http_err
     except Exception as e:
@@ -173,17 +183,46 @@ async def login(usuario: UsuarioLogin):
         db.close()
 
 # -----------------------------------------------------------------
-# ROTAS FINANCEIRAS COM INTELIGÊNCIA DE NÍVEL DE ACESSO
+# 🌟 NOVA ROTA: ATUALIZAÇÃO DO PERFIL (MÉTODO PUT)
+# -----------------------------------------------------------------
+@app.put("/perfil")
+async def atualizar_perfil(perfil: UsuarioPerfil, usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
+    db = SessionLocal()
+    try:
+        usuario = db.query(UsuarioDB).filter(UsuarioDB.id == usuario_atual.id).first()
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+        
+        # Mapeia e atualiza os campos recebidos do Front
+        usuario.nome_completo = perfil.nome_completo
+        usuario.profissao = perfil.profissao
+        usuario.salario_base = perfil.salario_base
+        usuario.meta_economia = perfil.meta_economia
+        usuario.telefone = perfil.telefone
+        usuario.foto_perfil = perfil.foto_perfil
+        if perfil.email:
+            usuario.email = perfil.email
+
+        db.commit()
+        return {"mensagem": "Perfil atualizado com sucesso!"}
+    except Exception as e:
+        print(f"💥 Erro ao salvar perfil: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno ao salvar informações do perfil.")
+    finally:
+        db.close()
+
+# -----------------------------------------------------------------
+# ROTAS FINANCEIRAS
 # -----------------------------------------------------------------
 @app.post("/calcular")
 async def calcular(item: Financa, usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
-    salario_atual = 0.0 
-    lucro_calculado = salario_atual - item.despesa # R$ 0 - Gasto = Sobra
+    salario_atual = usuario_atual.salario_base or 0.0 
+    lucro_calculado = salario_atual - item.despesa 
     
     db = SessionLocal()
     try:
         nova_transacao = FinancaDB(
-            nome=usuario_atual.username.upper(), # Injeta o nome do dono do Token
+            nome=usuario_atual.username.upper(), 
             mes=item.mes,
             dia=item.dia,
             salario=salario_atual,
@@ -195,7 +234,6 @@ async def calcular(item: Financa, usuario_atual: UsuarioDB = Depends(obter_usuar
         db.commit()
         db.refresh(nova_transacao)
         
-        # Retorna exatamente o formato que o React espera ler e colocar na tabela
         return {
             "id": nova_transacao.id, 
             "nome": nova_transacao.nome, 
@@ -208,12 +246,10 @@ async def calcular(item: Financa, usuario_atual: UsuarioDB = Depends(obter_usuar
     finally:
         db.close()
 
-
 @app.get("/transacoes")
 async def listar_transacoes(usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
     db = SessionLocal()
     try:
-        # Se for o Admin Renato, vê tudo. Se for cliente, vê só as dele.
         if usuario_atual.is_admin:
             transacoes = db.query(FinancaDB).all()
         else:
@@ -233,7 +269,6 @@ async def listar_transacoes(usuario_atual: UsuarioDB = Depends(obter_usuario_atu
         ]
     finally:
         db.close()
-
 
 @app.delete("/transacoes/{id_transacao}")
 async def deletar_transacao(id_transacao: int, usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
