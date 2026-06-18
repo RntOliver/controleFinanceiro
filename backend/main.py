@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Header
 from pydantic import BaseModel, Field, field_validator
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, Boolean # Adicionado Boolean
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import hashlib
@@ -17,7 +17,7 @@ app.add_middleware(
 )
 
 # -----------------------------------------------------------------
-# BANCO DE DADOS (Com nível de acesso)
+# BANCO DE DADOS (Com nível de acesso e e-mail)
 # -----------------------------------------------------------------
 DATABASE_URL = "sqlite:///./financas.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -27,7 +27,11 @@ Base = declarative_base()
 class UsuarioDB(Base):
     __tablename__ = "usuarios"
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
+    username = Column(String, index=True)
+    
+    # 🌟 CORREÇÃO 3: Adicionada a coluna física de e-mail na tabela
+    email = Column(String, unique=True, index=True, nullable=False) 
+    
     senha_criptografada = Column(String)
     token_atual = Column(String, nullable=True)
     is_admin = Column(Boolean, default=False) # 👑 TRUE para Administrador, FALSE para Cliente comum
@@ -37,37 +41,50 @@ class UsuarioDB(Base):
 class FinancaDB(Base):
     __tablename__ = "transacoes"
     id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String, index=True)
-    salario = Column(Float)
+    nome = Column(String, index=True)      # Guarda o username automaticamente
+    mes = Column(String, index=True)       # 🌟 Novo: Ex: "JANEIRO"
+    dia = Column(Integer)                  # 🌟 Novo: Ex: 15
+    salario = Column(Float, default=0.0)   # Ficará zerado até criarmos a tela de perfil
     despesa = Column(Float)
     lucro = Column(Float)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"))
     
     dono = relationship("UsuarioDB", back_populates="transacoes")
-
+# Ergue as tabelas limpas no banco de dados
 Base.metadata.create_all(bind=engine)
 
 # -----------------------------------------------------------------
-# CONTRATOS DE DADOS
+# CONTRATOS DE DADOS (Pydantic V2)
 # -----------------------------------------------------------------
 class Financa(BaseModel):
-    nome: str
-    salario: float = Field(..., ge=0)
-    despesa: float = Field(..., ge=0)
+    mes: str
+    dia: int = Field(..., ge=1, le=31)  # Valida se o dia está entre 1 e 31
+    despesa: float = Field(..., ge=0)   # Não permite gasto negativo
 
-    @field_validator('nome')
-    def nome_nao_vazio(cls, v):
+    @field_validator('mes')
+    def mes_nao_vazio(cls, v):
         if not v.strip():
-            raise ValueError('O nome não pode estar vazio')
+            raise ValueError('O mês precisa ser selecionado')
         return v.strip().upper()
 
-class UsuarioAutenticacao(BaseModel):
+# 🌟 CORREÇÃO 2: Contrato específico para o Cadastro com e-mail
+class UsuarioCadastro(BaseModel):
     username: str
+    email: str
     senha: str
-    is_admin: bool = False # Campo opcional no cadastro, padrão é cliente comum
+    is_admin: bool = False
 
-    @field_validator('username')
-    def limpar_username(cls, v):
+    @field_validator('username', 'email')
+    def limpar_campos(cls, v):
+        return v.strip().lower()
+
+# 🌟 CORREÇÃO 4: Contrato específico para o Login usando E-mail e Senha
+class UsuarioLogin(BaseModel):
+    email: str
+    senha: str
+
+    @field_validator('email')
+    def limpar_email(cls, v):
         return v.strip().lower()
 
 # -----------------------------------------------------------------
@@ -85,57 +102,67 @@ async def obter_usuario_atual(authorization: str = Header(None)):
     token = authorization.replace("Bearer ", "").strip()
     
     db = SessionLocal()
-    usuario = db.query(UsuarioDB).filter(UsuarioDB.token_atual == token).first()
-    db.close()
-    
-    if not usuario:
-        raise HTTPException(status_code=401, detail="Sessão expirada ou token inválido.")
-    
-    return usuario
+    try:
+        usuario = db.query(UsuarioDB).filter(UsuarioDB.token_atual == token).first()
+        if not usuario:
+            raise HTTPException(status_code=401, detail="Sessão expirada ou token inválido.")
+        return usuario
+    finally:
+        db.close()
 
 # -----------------------------------------------------------------
 # ROTAS DE AUTENTICAÇÃO
 # -----------------------------------------------------------------
 @app.post("/auth/registrar")
-async def registrar_usuario(usuario: UsuarioAutenticacao):
+async def registrar_usuario(usuario: UsuarioCadastro): 
     db = SessionLocal()
-    usuario_existente = db.query(UsuarioDB).filter(UsuarioDB.username == usuario.username).first()
-    if usuario_existente:
-        db.close()
-        raise HTTPException(status_code=400, detail="Este nome de usuário já existe.")
-    
-    # 👑 Se o nome de usuário criado for 'admin', ele vira administrador automaticamente automaticamente
-    tornar_admin = True if usuario.username == "admin" else usuario.is_admin
+    try:
+        # 👑 REGRA DE OURO: Apenas o e-mail do Renato vira Admin Master automaticamente
+        seu_email_admin = "re83375741@gmail.com"
+        
+        email_existente = db.query(UsuarioDB).filter(UsuarioDB.email == usuario.email).first()
+        if email_existente:
+            raise HTTPException(status_code=400, detail="Este endereço de e-mail já está cadastrado.")
+        
+        # 🌟 CORREÇÃO 1: Bloco try estruturado e indentado perfeitamente
+        tornar_admin = True if usuario.email.lower() == seu_email_admin else usuario.is_admin
 
-    novo_usuario = UsuarioDB(
-        username=usuario.username, 
-        senha_criptografada=gerar_hash_senha(usuario.senha),
-        is_admin=tornar_admin
-    )
-    db.add(novo_usuario)
-    db.commit()
-    db.close()
-    return {"mensagem": f"Usuário {'Administrador' if tornar_admin else 'Cliente'} registrado com sucesso!"}
+        novo_usuario = UsuarioDB(
+            username=usuario.username,
+            email=usuario.email,
+            senha_criptografada=gerar_hash_senha(usuario.senha),
+            is_admin=tornar_admin
+        )
+        db.add(novo_usuario)
+        db.commit()
+        
+        return {"mensagem": f"Usuário {'Administrador' if tornar_admin else 'Cliente'} registrado com sucesso!"}
+    finally:
+        db.close()
 
 
 @app.post("/auth/login")
-async def login(usuario: UsuarioAutenticacao):
+async def login(usuario: UsuarioLogin):
     db = SessionLocal()
     try:
-        usuario_banco = db.query(UsuarioDB).filter(UsuarioDB.username == usuario.username).first()
+        # 🌟 CORREÇÃO 4: Login modificado para buscar estritamente pelo e-mail vindo do React
+        usuario_banco = db.query(UsuarioDB).filter(UsuarioDB.email == usuario.email).first()
         if not usuario_banco:
-            raise HTTPException(status_code=400, detail="Usuário ou senha incorretos.")
+            raise HTTPException(status_code=400, detail="E-mail ou senha incorretos.")
         
         senha_teste_hash = gerar_hash_senha(usuario.senha)
         if usuario_banco.senha_criptografada != senha_teste_hash:
-            raise HTTPException(status_code=400, detail="Usuário ou senha incorretos.")
+            raise HTTPException(status_code=400, detail="E-mail ou senha incorretos.")
         
         token_seguro = secrets.token_hex(24)
         usuario_banco.token_atual = token_seguro
         db.commit()
         
-        # Retornamos também se ele é admin para o React saber como se comportar visualmente
-        return {"token": token_seguro, "username": usuario_banco.username, "is_admin": usuario_banco.is_admin}
+        return {
+            "token": token_seguro, 
+            "username": usuario_banco.username, 
+            "is_admin": usuario_banco.is_admin
+        }
         
     except HTTPException as http_err:
         raise http_err
@@ -148,57 +175,80 @@ async def login(usuario: UsuarioAutenticacao):
 # -----------------------------------------------------------------
 # ROTAS FINANCEIRAS COM INTELIGÊNCIA DE NÍVEL DE ACESSO
 # -----------------------------------------------------------------
-
 @app.post("/calcular")
 async def calcular(item: Financa, usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
-    lucro_calculado = item.salario - item.despesa
-    db = SessionLocal()
+    salario_atual = 0.0 
+    lucro_calculado = salario_atual - item.despesa # R$ 0 - Gasto = Sobra
     
-    nova_transacao = FinancaDB(
-        nome=item.nome,
-        salario=item.salario,
-        despesa=item.despesa,
-        lucro=lucro_calculado,
-        usuario_id=usuario_atual.id 
-    )
-    db.add(nova_transacao)
-    db.commit()
-    db.refresh(nova_transacao)
-    db.close() 
-    return {"id": nova_transacao.id, "nome": nova_transacao.nome, "salario": nova_transacao.salario, "despesa": nova_transacao.despesa, "Lucro": nova_transacao.lucro}
+    db = SessionLocal()
+    try:
+        nova_transacao = FinancaDB(
+            nome=usuario_atual.username.upper(), # Injeta o nome do dono do Token
+            mes=item.mes,
+            dia=item.dia,
+            salario=salario_atual,
+            despesa=item.despesa,
+            lucro=lucro_calculado,
+            usuario_id=usuario_atual.id 
+        )
+        db.add(nova_transacao)
+        db.commit()
+        db.refresh(nova_transacao)
+        
+        # Retorna exatamente o formato que o React espera ler e colocar na tabela
+        return {
+            "id": nova_transacao.id, 
+            "nome": nova_transacao.nome, 
+            "mes": nova_transacao.mes,
+            "dia": nova_transacao.dia,
+            "salario": nova_transacao.salario, 
+            "despesa": nova_transacao.despesa, 
+            "lucro": nova_transacao.lucro
+        }
+    finally:
+        db.close()
 
 
 @app.get("/transacoes")
-async def obter_transacoes(usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
+async def listar_transacoes(usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
     db = SessionLocal()
-    
-    # 🧠 A MÁGICA ACONTECE AQUI:
-    if usuario_atual.is_admin:
-        # Se for o Administrador Master, traz TODAS as transações de todos os clientes existentes
-        historico = db.query(FinancaDB).all()
-    else:
-        # Se for um cliente comum (renato, ysabella), traz estritamente os dados dele
-        historico = db.query(FinancaDB).filter(FinancaDB.usuario_id == usuario_atual.id).all()
-        
-    db.close()
-    return [{"id": t.id, "nome": t.nome, "salario": t.salario, "despesa": t.despesa, "Lucro": t.lucro} for t in historico]
+    try:
+        # Se for o Admin Renato, vê tudo. Se for cliente, vê só as dele.
+        if usuario_atual.is_admin:
+            transacoes = db.query(FinancaDB).all()
+        else:
+            transacoes = db.query(FinancaDB).filter(FinancaDB.usuario_id == usuario_atual.id).all()
+            
+        return [
+            {
+                "id": t.id,
+                "nome": t.nome,
+                "mes": t.mes,
+                "dia": t.dia,
+                "salario": t.salario,
+                "despesa": t.despesa,
+                "lucro": t.lucro
+            }
+            for t in transacoes
+        ]
+    finally:
+        db.close()
 
 
 @app.delete("/transacoes/{id_transacao}")
 async def deletar_transacao(id_transacao: int, usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
     db = SessionLocal()
-    
-    # Administrador pode apagar qualquer linha do sistema. Cliente comum só apaga a sua.
-    if usuario_atual.is_admin:
-        item_banco = db.query(FinancaDB).filter(FinancaDB.id == id_transacao).first()
-    else:
-        item_banco = db.query(FinancaDB).filter(FinancaDB.id == id_transacao, FinancaDB.usuario_id == usuario_atual.id).first()
-    
-    if item_banco:
-        db.delete(item_banco)
-        db.commit()
+    try:
+        if usuario_atual.is_admin:
+            item_banco = db.query(FinancaDB).filter(FinancaDB.id == id_transacao).first()
+        else:
+            item_banco = db.query(FinancaDB).filter(FinancaDB.id == id_transacao, FinancaDB.usuario_id == usuario_atual.id).first()
+        
+        if item_banco:
+            db.delete(item_banco)
+            db.commit()
+            return {"mensagem": "Excluído com sucesso!"}
+        
+        raise HTTPException(status_code=404, detail="Registro não encontrado ou acesso não autorizado.")
+    finally:
         db.close()
-        return {"mensagem": "Excluído com sucesso!"}
-    
-    db.close()
-    raise HTTPException(status_code=404, detail="Registro não encontrado ou acesso não autorizado.")

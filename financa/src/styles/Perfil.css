@@ -1,0 +1,124 @@
+/* ==========================================================================
+   ESTILIZAÇÃO DA TELA DE USUÁRIO (PERFIL) - LIGHT THEME
+   ========================================================================== */
+
+.perfil-container {
+    padding: 20px;
+}
+
+.perfil-topo {
+    margin-bottom: 30px;
+}
+
+.perfil-topo h2 {
+    font-size: 26px;
+    color: #0f172a;
+    margin-bottom: 10px;
+}
+
+.perfil-topo p {
+    color: #475569;
+    max-width: 600px;
+}
+
+/* Layout de Duas Colunas (Cartão + Formulário) */
+.perfil-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 40px;
+    align-items: start;
+}
+
+/* Cartão de Identificação */
+.perfil-cartao {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 30px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.perfil-avatar {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 15px;
+}
+
+.perfil-cartao h3 {
+    margin: 10px 0;
+    color: #0f172a;
+}
+
+/* Badges estilizadas */
+.perfil-admin {
+    background-color: #fef3c7;
+    color: #d97706;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+
+.perfil-usuario {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+
+/* Ajuste fino para os campos dentro do formulário */
+.grupo-formulario {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dividir em 2 colunas para ficar elegante */
+    gap: 20px;
+}
+
+/* Garantir que inputs ocupem o espaço corretamente */
+.grupo-formulario label {
+    display: block;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+/* Estilo dos inputs reaproveitando o padrão que já definimos */
+.grupo-formulario input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    box-sizing: border-box; /* Importante para o input não passar da margem */
+}
+
+/* Botão de Salvar */
+.formulario-inputs button {
+    margin-top: 25px;
+    background-color: #22c55e;
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.formulario-inputs button:hover {
+    background-color: #16a34a;
+}
