@@ -23,22 +23,25 @@ export default function Perfil({ token, usuarioLogado }) {
   const salvarPerfil = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://127.0.0.1:8000/perfil", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        "https://rnt-finance-backend.onrender.com/perfil",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            nome_completo: perfil.nomeCompleto,
+            profissao: perfil.profissao,
+            salario_base: parseFloat(perfil.salarioBase) || 0,
+            meta_economia: parseFloat(perfil.metaEconomia) || 0,
+            email: perfil.email,
+            telefone: perfil.telefone,
+            foto_perfil: perfil.fotoPerfil,
+          }),
         },
-        body: JSON.stringify({
-          nome_completo: perfil.nomeCompleto,
-          profissao: perfil.profissao,
-          salario_base: parseFloat(perfil.salarioBase) || 0,
-          meta_economia: parseFloat(perfil.metaEconomia) || 0,
-          email: perfil.email,
-          telefone: perfil.telefone,
-          foto_perfil: perfil.fotoPerfil,
-        }),
-      });
+      );
 
       if (response.ok) {
         alert("✅ Perfil atualizado com sucesso!");

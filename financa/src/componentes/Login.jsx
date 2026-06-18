@@ -2,7 +2,7 @@ import { useState } from "react";
 import "../styles/Login.css";
 
 // CORREÇÃO 1: Como você está usando Vite, a forma de ler a variável de ambiente é com import.meta.env
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_URL = "https://rnt-finance-backend.onrender.com";
 
 function Login({ onLoginSuccess }) {
   const [isCadastro, setIsCadastro] = useState(false);
@@ -25,7 +25,7 @@ function Login({ onLoginSuccess }) {
     setMensagemSucesso("");
 
     try {
-      const resposta = await fetch(`${API_BASE_URL}/auth/registrar`, {
+      const resposta = await fetch(`${API_URL}/auth/registrar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, email, senha }),
@@ -51,7 +51,7 @@ function Login({ onLoginSuccess }) {
     setMensagemSucesso("");
 
     try {
-      const resposta = await fetch(`${API_BASE_URL}/auth/login`, {
+      const resposta = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, senha }),

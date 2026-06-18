@@ -15,7 +15,7 @@ function Dashboard({ token, usernameLogado, isAdmin, onLogout }) {
 
     const carregarDadosDoBanco = async () => {
       try {
-        const resposta = await fetch("http://127.0.0.1:8000/transacoes", {
+        const resposta = await fetch("https://rnt-finance-backend.onrender.com/transacoes", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
