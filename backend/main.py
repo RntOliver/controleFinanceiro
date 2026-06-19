@@ -34,7 +34,7 @@ class UsuarioDB(Base):
     token_atual = Column(String, nullable=True)
     is_admin = Column(Boolean, default=False) 
 
-    # 🌟 NOVOS CAMPOS DO PERFIL NO BANCO DE DADOS
+    # 🌟 CAMPOS DO PERFIL NO BANCO DE DADOS
     nome_completo = Column(String, nullable=True)
     profissao = Column(String, nullable=True)
     salario_base = Column(Float, default=0.0)
@@ -92,7 +92,7 @@ class UsuarioLogin(BaseModel):
     def limpar_email(cls, v):
         return v.strip().lower()
 
-# 🌟 NOVO: Contrato de dados para atualização do Perfil vindo do React
+# Contrato de dados para atualização do Perfil vindo do React
 class UsuarioPerfil(BaseModel):
     nome_completo: Optional[str] = None
     profissao: Optional[str] = None
@@ -183,8 +183,29 @@ async def login(usuario: UsuarioLogin):
         db.close()
 
 # -----------------------------------------------------------------
-# 🌟 NOVA ROTA: ATUALIZAÇÃO DO PERFIL (MÉTODO PUT)
+# 🌟 GERENCIAMENTO DO PERFIL (MÉTODOS GET E PUT - CORRIGIDOS)
 # -----------------------------------------------------------------
+
+@app.get("/perfil")
+async def obter_perfil(usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
+    db = SessionLocal()
+    try:
+        usuario = db.query(UsuarioDB).filter(UsuarioDB.id == usuario_atual.id).first()
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+        
+        return {
+            "nome_completo": usuario.nome_completo or "",
+            "profissao": usuario.profissao or "",
+            "salario_base": usuario.salario_base or 0.0,
+            "meta_economia": usuario.meta_economia or 0.0,
+            "email": usuario.email,
+            "telefone": usuario.telefone or "",
+            "foto_perfil": usuario.foto_perfil or ""
+        }
+    finally:
+        db.close()
+
 @app.put("/perfil")
 async def atualizar_perfil(perfil: UsuarioPerfil, usuario_atual: UsuarioDB = Depends(obter_usuario_atual)):
     db = SessionLocal()
@@ -193,18 +214,25 @@ async def atualizar_perfil(perfil: UsuarioPerfil, usuario_atual: UsuarioDB = Dep
         if not usuario:
             raise HTTPException(status_code=404, detail="Usuário não encontrado.")
         
-        # Mapeia e atualiza os campos recebidos do Front
+        # Se houver tentativa de mudar o email, verifica duplicidade
+        if perfil.email and perfil.email.strip().lower() != usuario.email.lower():
+            email_duplicado = db.query(UsuarioDB).filter(UsuarioDB.email == perfil.email.strip().lower()).first()
+            if email_duplicado:
+                raise HTTPException(status_code=400, detail="Este e-mail já está sendo usado por outro usuário.")
+            usuario.email = perfil.email.strip().lower()
+        
+        # Mapeia e atualiza os campos numéricos e textuais recebidos do Front
         usuario.nome_completo = perfil.nome_completo
         usuario.profissao = perfil.profissao
         usuario.salario_base = perfil.salario_base
         usuario.meta_economia = perfil.meta_economia
         usuario.telefone = perfil.telefone
         usuario.foto_perfil = perfil.foto_perfil
-        if perfil.email:
-            usuario.email = perfil.email
 
         db.commit()
         return {"mensagem": "Perfil atualizado com sucesso!"}
+    except HTTPException as http_err:
+        raise http_err
     except Exception as e:
         print(f"💥 Erro ao salvar perfil: {e}")
         raise HTTPException(status_code=500, detail="Erro interno ao salvar informações do perfil.")

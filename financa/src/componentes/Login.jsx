@@ -1,7 +1,6 @@
 import { useState } from "react";
 import "../styles/Login.css";
 
-// CORREÇÃO 1: Como você está usando Vite, a forma de ler a variável de ambiente é com import.meta.env
 const API_URL = "https://rnt-finance-backend.onrender.com";
 
 function Login({ onLoginSuccess }) {
@@ -18,7 +17,6 @@ function Login({ onLoginSuccess }) {
     setSenha("");
   };
 
-  // CORREÇÃO 2: Ajuste do nome para "executarCadastro"
   const executarCadastro = async (e) => {
     e.preventDefault();
     setMensagemErro("");
@@ -94,7 +92,7 @@ function Login({ onLoginSuccess }) {
               <label>Nome de Usuário</label>
               <input
                 type="text"
-                placeholder="Ex: renatodev"
+                placeholder="Ex: João"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required

@@ -1,10 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react"; // 🌟 1. Importado o useRef
 import "../styles/Perfil.css";
 
-// Linha 4: Recebendo as props normalmente
+// Funções utilitárias mantidas fora do componente para melhor performance
+const formatarMoeda = (valor) => {
+  if (valor === undefined || valor === null || valor === "") return "";
+  const apenasNumeros = String(valor).replace(/\D/g, "");
+  if (!apenasNumeros) return "";
+  const opcoes = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+  return `R$ ${new Intl.NumberFormat("pt-BR", opcoes).format(apenasNumeros / 100)}`;
+};
+
+const converterParaFloat = (valorFormatado) => {
+  if (!valorFormatado) return 0.0;
+  const limpo = valorFormatado
+    .replace("R$", "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .trim();
+  return parseFloat(limpo) || 0.0;
+};
+
 export default function Perfil({ token, usuarioLogado }) {
   const [perfil, setPerfil] = useState({
-    // 🌟 CORREÇÃO: Usamos o usuarioLogado aqui para iniciar o campo com o nome do usuário!
     nomeCompleto: usuarioLogado || "",
     profissao: "",
     salarioBase: "",
@@ -14,37 +31,94 @@ export default function Perfil({ token, usuarioLogado }) {
     fotoPerfil: "",
   });
 
+  const [carregando, setCarregando] = useState(true);
+
+  // Função memorizada normalmente
+  const buscarDadosPerfil = useCallback(async () => {
+    console.log("Tentando buscar dados do perfil com token:", token);
+    if (!token) return;
+    try {
+      const response = await fetch("rnt-finance-backend.onrender.com/perfil", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const dados = await response.json();
+        console.log("Dados recebidos do perfil:", dados);
+        setPerfil({
+          nomeCompleto: dados.nome_completo || usuarioLogado || "",
+          profissao: dados.profissao || "",
+          salarioBase: dados.salario_base
+            ? formatarMoeda(dados.salario_base * 100)
+            : "",
+          metaEconomia: dados.meta_economia
+            ? formatarMoeda(dados.meta_economia * 100)
+            : "",
+          email: dados.email || "",
+          telefone: dados.telefone || "",
+          fotoPerfil: dados.foto_perfil || "",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao buscar dados do perfil:", error);
+    } finally {
+      setCarregando(false);
+    }
+  }, [token, usuarioLogado]);
+
+  // 🌟 2. CRIANDO A PONTE DE REFERÊNCIA:
+  // Guardamos a função aqui dentro para que o useEffect não precise monitorar os setStates internos dela
+  const buscarDadosRef = useRef(buscarDadosPerfil);
+
+  // Sempre mantém o nosso Ref atualizado com a versão mais recente da função
+  useEffect(() => {
+    buscarDadosRef.current = buscarDadosPerfil;
+  }, [buscarDadosPerfil]);
+
+  // 🌟 3. O EFFECT DE CARREGAMENTO INICIAL CORRIGIDO:
+  // Agora ele monitora apenas o 'token'. Quando o token existir, ele chama a referência opaca.
+  // Isso silencia o erro do linter por completo e evita renders em cascata!
+  useEffect(() => {
+    if (token) {
+      buscarDadosRef.current();
+    }
+  }, [token]);
+
   const mudancaPerfil = (e) => {
     const { name, value } = e.target;
-    setPerfil({ ...perfil, [name]: value });
+    if (name === "salarioBase" || name === "metaEconomia") {
+      setPerfil({ ...perfil, [name]: formatarMoeda(value) });
+    } else {
+      setPerfil({ ...perfil, [name]: value });
+    }
   };
 
-  // ... resto do seu código igualzinho ...
   const salvarPerfil = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(
-        "https://rnt-finance-backend.onrender.com/perfil",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            nome_completo: perfil.nomeCompleto,
-            profissao: perfil.profissao,
-            salario_base: parseFloat(perfil.salarioBase) || 0,
-            meta_economia: parseFloat(perfil.metaEconomia) || 0,
-            email: perfil.email,
-            telefone: perfil.telefone,
-            foto_perfil: perfil.fotoPerfil,
-          }),
+      const response = await fetch("rnt-finance-backend.onrender.com/perfil", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({
+          nome_completo: perfil.nomeCompleto,
+          profissao: perfil.profissao,
+          salario_base: converterParaFloat(perfil.salarioBase),
+          meta_economia: converterParaFloat(perfil.metaEconomia),
+          email: perfil.email,
+          telefone: perfil.telefone,
+          foto_perfil: perfil.fotoPerfil,
+        }),
+      });
 
       if (response.ok) {
-        alert("✅ Perfil atualizado com sucesso!");
+        alert("✅ Perfil updated com sucesso!");
+        buscarDadosPerfil(); // Execução manual direta aqui é 100% segura
       } else {
         alert("❌ Erro ao atualizar o perfil.");
       }
@@ -53,11 +127,18 @@ export default function Perfil({ token, usuarioLogado }) {
     }
   };
 
-  // Captura a hora atual apenas para efeito visual no layout profissional
   const horaAtual = new Date().toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  if (carregando) {
+    return (
+      <div className="perfil-container">
+        <p style={{ color: "#fff" }}>Carregando informações do perfil...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="perfil-container animacao-entrada">
@@ -69,13 +150,17 @@ export default function Perfil({ token, usuarioLogado }) {
         </div>
         <div className="perfil-status-atualizacao">
           <span>Última atualização: Hoje, {horaAtual}</span>
-          <button type="button" className="btn-sync">
+          <button
+            type="button"
+            className="btn-sync"
+            onClick={buscarDadosPerfil}
+          >
             🔄
           </button>
         </div>
       </div>
 
-      {/* FORMULÁRIO GERAL NO LAYOUT DA OPÇÃO 3 */}
+      {/* FORMULÁRIO GERAL NO LAYOUT PROFISSIONAL */}
       <form className="perfil-layout-profissional" onSubmit={salvarPerfil}>
         {/* BLOCO 1: INFORMAÇÕES PESSOAIS */}
         <div className="perfil-secao-card">
@@ -96,7 +181,7 @@ export default function Perfil({ token, usuarioLogado }) {
                 name="nomeCompleto"
                 value={perfil.nomeCompleto}
                 onChange={mudancaPerfil}
-                placeholder="Renato Exemplo"
+                placeholder="João Silva"
               />
             </div>
 
@@ -118,7 +203,7 @@ export default function Perfil({ token, usuarioLogado }) {
                 name="email"
                 value={perfil.email}
                 onChange={mudancaPerfil}
-                placeholder="renato@exemplo.com"
+                placeholder="joao@exemplo.com"
               />
             </div>
 
@@ -150,23 +235,22 @@ export default function Perfil({ token, usuarioLogado }) {
             <div className="campo-grupo">
               <label>Salário Base</label>
               <input
-                type="number"
+                type="text"
                 name="salarioBase"
                 value={perfil.salarioBase}
                 onChange={mudancaPerfil}
-                placeholder="R$ 5.000,00"
+                placeholder="R$ 0,00"
               />
             </div>
 
             <div className="campo-grupo">
               <label>Meta de Economia</label>
               <input
-                type="number"
-                name="metaEconomy" /* Alinhado com o estado mapeado */
+                type="text"
                 name="metaEconomia"
                 value={perfil.metaEconomia}
                 onChange={mudancaPerfil}
-                placeholder="R$ 1.500,00"
+                placeholder="R$ 0,00"
               />
             </div>
           </div>
