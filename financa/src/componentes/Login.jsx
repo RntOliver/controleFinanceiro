@@ -3,18 +3,41 @@ import "../styles/Login.css";
 
 const API_URL = "https://rnt-finance-backend.onrender.com";
 
+// Funções utilitárias de formatação de moeda (mesmo padrão usado no Perfil.jsx)
+const formatarMoeda = (valor) => {
+  if (valor === undefined || valor === null || valor === "") return "";
+  const apenasNumeros = String(valor).replace(/\D/g, "");
+  if (!apenasNumeros) return "";
+  const opcoes = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+  return `R$ ${new Intl.NumberFormat("pt-BR", opcoes).format(apenasNumeros / 100)}`;
+};
+
+const converterParaFloat = (valorFormatado) => {
+  if (!valorFormatado) return 0.0;
+  const limpo = valorFormatado
+    .replace("R$", "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .trim();
+  return parseFloat(limpo) || 0.0;
+};
+
 function Login({ onLoginSuccess }) {
   const [isCadastro, setIsCadastro] = useState(false);
   const [username, setUsername] = useState("");
+  const [nomeCompleto, setNomeCompleto] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [salario, setSalario] = useState("");
   const [mensagemErro, setMensagemErro] = useState("");
   const [mensagemSucesso, setMensagemSucesso] = useState("");
 
   const limparFormulario = () => {
     setUsername("");
+    setNomeCompleto("");
     setEmail("");
     setSenha("");
+    setSalario("");
   };
 
   const executarCadastro = async (e) => {
@@ -26,7 +49,13 @@ function Login({ onLoginSuccess }) {
       const resposta = await fetch(`${API_URL}/auth/registrar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, senha }),
+        body: JSON.stringify({
+          username,
+          nome_completo: nomeCompleto,
+          email,
+          senha,
+          salario_base: converterParaFloat(salario),
+        }),
       });
 
       const dados = await resposta.json();
@@ -88,16 +117,40 @@ function Login({ onLoginSuccess }) {
 
         <form onSubmit={isCadastro ? executarCadastro : executarLogin}>
           {isCadastro && (
-            <div className="grupo-input">
-              <label>Nome de Usuário</label>
-              <input
-                type="text"
-                placeholder="Ex: João"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-            </div>
+            <>
+              <div className="grupo-input">
+                <label>Nome de Usuário</label>
+                <input
+                  type="text"
+                  placeholder="Ex: joaosilva"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="grupo-input">
+                <label>Nome Completo</label>
+                <input
+                  type="text"
+                  placeholder="Ex: João da Silva"
+                  value={nomeCompleto}
+                  onChange={(e) => setNomeCompleto(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="grupo-input">
+                <label>Salário</label>
+                <input
+                  type="text"
+                  placeholder="R$ 0,00"
+                  value={salario}
+                  onChange={(e) => setSalario(formatarMoeda(e.target.value))}
+                  required
+                />
+              </div>
+            </>
           )}
 
           <div className="grupo-input">

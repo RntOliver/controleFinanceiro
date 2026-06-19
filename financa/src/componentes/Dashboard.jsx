@@ -62,7 +62,7 @@ function Dashboard({ token, usernameLogado, isAdmin, onLogout }) {
         {telaAtiva === "perfil" && (
           <Perfil
             token={token}
-            usuarioLogado={{ username: usernameLogado, is_admin: isAdmin }}
+            usuarioLogado={usernameLogado}
           />
         )}
 

@@ -74,13 +74,21 @@ class Financa(BaseModel):
 
 class UsuarioCadastro(BaseModel):
     username: str
+    nome_completo: str
     email: str
     senha: str
+    salario_base: float = Field(..., gt=0)
     is_admin: bool = False
 
     @field_validator('username', 'email')
     def limpar_campos(cls, v):
         return v.strip().lower()
+
+    @field_validator('nome_completo')
+    def nome_nao_vazio(cls, v):
+        if not v.strip():
+            raise ValueError('O nome completo é obrigatório')
+        return v.strip()
 
 class UsuarioLogin(BaseModel):
     email: str
@@ -141,10 +149,12 @@ async def registrar_usuario(usuario: UsuarioCadastro, db: Session = Depends(get_
 
     novo_usuario = UsuarioDB(
         username=usuario.username,
+        nome_completo=usuario.nome_completo,
         email=usuario.email,
         senha_criptografada=gerar_hash_senha(usuario.senha),
+        salario_base=usuario.salario_base,
         is_admin=tornar_admin
-    )
+)
     db.add(novo_usuario)
     db.commit()
     
