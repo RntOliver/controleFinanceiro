@@ -12,7 +12,7 @@ function TabelaTransacoes({
 
     try {
       const resposta = await fetch(
-        `http://127.0.0.1:8000/transacoes/${idParaRemover}`,
+        `https://rnt-finance-backend.onrender.com/transacoes/${idParaRemover}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
