@@ -76,8 +76,10 @@ class Financa(BaseModel):
 
 class UsuarioCadastro(BaseModel):
     username: str
+    nome_completo: str
     email: str
     senha: str
+    salario_base: float = Field(..., ge=0)
     is_admin: bool = False
 
     @field_validator('username', 'email')
