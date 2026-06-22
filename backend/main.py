@@ -77,7 +77,11 @@ class UsuarioCadastro(BaseModel):
     nome_completo: str
     email: str
     senha: str
+<<<<<<< HEAD
     salario_base: float = Field(..., gt=0)
+=======
+    salario_base: float = Field(..., ge=0)
+>>>>>>> versao-estavel
     is_admin: bool = False
 
     @field_validator('username', 'email')
