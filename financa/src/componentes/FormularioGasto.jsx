@@ -31,18 +31,21 @@ function FormularioGasto({ token, transacoes, setTransacoes }) {
     const valorDespesa = converterParaNumeroPuro(despesa);
 
     try {
-      const resposta = await fetch("http://127.0.0.1:8000/calcular", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const resposta = await fetch(
+        "rnt-finance-backend.onrender.com/calcular",
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            mes: mes,
+            dia: parseInt(dia),
+            despesa: valorDespesa,
+          }),
         },
-        body: JSON.stringify({
-          mes: mes,
-          dia: parseInt(dia),
-          despesa: valorDespesa,
-        }),
-      });
+      );
 
       if (!resposta.ok) {
         alert("Erro ao registrar o gasto diário.");
