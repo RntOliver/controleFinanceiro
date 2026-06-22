@@ -334,3 +334,160 @@
     transform: translateY(0);
   }
 }
+
+/* ==========================================================================
+   CARDS COLAPSÁVEIS DE CLIENTES (VISÃO ADMIN)
+   ========================================================================== */
+
+.secao-historico {
+  margin-top: 10px;
+}
+
+.titulo-historico {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.estado-vazio {
+  color: #64748b;
+  text-align: center;
+  padding: 20px;
+}
+
+/* --- LISTA DE CARDS --- */
+.lista-cards-clientes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* --- CARD DE CADA CLIENTE --- */
+.card-cliente {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease;
+}
+
+.card-cliente:hover {
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+  border-color: #bfdbfe;
+}
+
+/* --- CABEÇALHO CLICÁVEL DO CARD --- */
+.card-cliente-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none; /* Evita selecionar texto ao clicar */
+  transition: background-color 0.2s ease;
+}
+
+.card-cliente-cabecalho:hover {
+  background-color: #f8fafc;
+}
+
+/* --- IDENTIDADE (AVATAR + NOME) --- */
+.card-cliente-identidade {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.card-cliente-avatar {
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.card-cliente-nome {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.3px;
+}
+
+/* --- RESUMO (MÉTRICAS + CHEVRON) --- */
+.card-cliente-resumo {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.resumo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.resumo-label {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.resumo-valor {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.card-chevron {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+}
+
+/* --- LANÇAMENTOS INTERNOS DO CARD --- */
+.card-cliente-lancamentos {
+  border-top: 1px solid #f1f5f9;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: #fafbfc;
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* --- LINHA DE CADA LANÇAMENTO (usado tanto no admin quanto no cliente) --- */
+.lista-lancamentos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.linha-lancamento {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #f97316; /* Destaque laranja igual ao tema original */
+  padding: 12px 16px;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1.5fr 1.5fr 1.5fr auto;
+  align-items: center;
+  font-size: 13px;
+  transition: background-color 0.15s ease;
+}
+
+.linha-lancamento:hover {
+  background-color: #f8fafc;
+}
