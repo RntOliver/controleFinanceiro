@@ -129,30 +129,14 @@ function Login({ onLoginSuccess }) {
 
         <div className="alternador-tela">
           {isCadastro ? (
-            <p>
-              Já possui uma conta?{" "}
-              <button
-                onClick={() => {
-                  setIsCadastro(false);
-                  limparFormulario();
-                  setMensagemErro("");
-                }}
-              >
-                Fazer Login
-              </button>
+            <p> Já possui uma conta?{" "}
+              <button onClick={() => { setIsCadastro(false); limparFormulario(); setMensagemErro("");
+                }} > Fazer Login </button>
             </p>
           ) : (
-            <p>
-              Novo por aqui?{" "}
-              <button
-                onClick={() => {
-                  setIsCadastro(true);
-                  limparFormulario();
-                  setMensagemErro("");
-                }}
-              >
-                Cadastre-se agora
-              </button>
+            <p> Novo por aqui?{" "}
+              <button onClick={() => { setIsCadastro(true); limparFormulario(); setMensagemErro(""); 
+              }}> Cadastre-se agora </button>
             </p>
           )}
         </div>
