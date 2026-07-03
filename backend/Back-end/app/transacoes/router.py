@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from app.auth.utils import UsuarioDB, obter_usuario_atual
+from app.auth.models import UsuarioDB
+from app.auth.utils import obter_usuario_atual
 from app.transacoes.models import FinancaDB
 from app.transacoes.schemas import Financa
 

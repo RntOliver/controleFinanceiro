@@ -2,6 +2,7 @@ import secrets
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
+from app.auth.models import UsuarioDB
 from app.auth.utils import UsuarioDB, gerar_hash_senha, obter_usuario_atual
 from app.auth.schemas import UsuarioCadastro, UsuarioLogin, UsuarioPerfil
 

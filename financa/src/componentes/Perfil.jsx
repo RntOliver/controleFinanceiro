@@ -38,7 +38,7 @@ export default function Perfil({ token, usuarioLogado }) {
     console.log("Tentando buscar dados do perfil com token:", token);
     if (!token) return;
     try {
-      const response = await fetch("https://rnt-finance-backend.onrender.com/perfil", {
+      const response = await fetch("https://rnt-finance-backend.onrender.com/auth/perfil", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -99,7 +99,7 @@ export default function Perfil({ token, usuarioLogado }) {
   const salvarPerfil = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("https://rnt-finance-backend.onrender.com/perfil", {
+      const response = await fetch("https://rnt-finance-backend.onrender.com/auth/perfil", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

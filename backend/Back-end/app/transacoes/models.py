@@ -13,4 +13,4 @@ class FinancaDB(Base):
     lucro = Column(Float)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"))
     
-    dono = relationship("app.auth.utils.UsuarioDB", back_populates="transacoes")
+    dono = relationship("UsuarioDB", back_populates="transacoes")

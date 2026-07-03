@@ -32,7 +32,7 @@ function FormularioGasto({ token, transacoes, setTransacoes }) {
 
     try {
       const resposta = await fetch(
-        "https://rnt-finance-backend.onrender.com/calcular",
+        "https://rnt-finance-backend.onrender.com/transacoes/calcular",
         {
           method: "POST",
           headers: {

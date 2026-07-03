@@ -13,4 +13,4 @@ class MetaDB(Base):
     status = Column(String, default="ativa") # ativa, concluida, interrompida
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
 
-    dono = relationship("app.auth.utils.UsuarioDB", back_populates="metas")
+    dono = relationship("UsuarioDB", back_populates="metas")

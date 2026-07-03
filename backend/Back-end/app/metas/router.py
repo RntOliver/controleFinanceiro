@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from app.auth.utils import UsuarioDB, obter_usuario_atual
-from app.metas.models import MetaDB
+from app.auth.utils import obter_usuario_atual
+from app.metas.models import UsuarioDB, MetaDB
 from app.metas.schemas import MetaCreate, MetaAporte, MetaStatusUpdate
 
 router = APIRouter()
