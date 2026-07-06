@@ -6,6 +6,8 @@ const API_URL = "https://rnt-finance-backend.onrender.com";
 function Login({ onLoginSuccess }) {
   const [isCadastro, setIsCadastro] = useState(false);
   const [username, setUsername] = useState("");
+  const [nomeCompleto, setNomeCompleto] = useState("");
+  const [salario, setSalario] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mensagemErro, setMensagemErro] = useState("");
@@ -15,6 +17,8 @@ function Login({ onLoginSuccess }) {
     setUsername("");
     setEmail("");
     setSenha("");
+    setNomeCompleto("");
+    setSalario("");
   };
 
   const executarCadastro = async (e) => {
@@ -26,7 +30,13 @@ function Login({ onLoginSuccess }) {
       const resposta = await fetch(`${API_URL}/auth/registrar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, senha }),
+        body: JSON.stringify({ 
+          username,
+          nome_completo: nomeCompleto,
+          email,
+          senha,
+          salario_base: parseFloat(salario),
+        }),
       });
 
       const dados = await resposta.json();
