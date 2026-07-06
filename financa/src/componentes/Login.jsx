@@ -26,6 +26,10 @@ function Login({ onLoginSuccess }) {
   const [isCadastro, setIsCadastro] = useState(false);
   const [username, setUsername] = useState("");
   const [nomeCompleto, setNomeCompleto] = useState("");
+<<<<<<< HEAD
+=======
+  const [salario, setSalario] = useState("");
+>>>>>>> versao-estavel
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [salario, setSalario] = useState("");
@@ -37,6 +41,10 @@ function Login({ onLoginSuccess }) {
     setNomeCompleto("");
     setEmail("");
     setSenha("");
+<<<<<<< HEAD
+=======
+    setNomeCompleto("");
+>>>>>>> versao-estavel
     setSalario("");
   };
 
@@ -49,12 +57,20 @@ function Login({ onLoginSuccess }) {
       const resposta = await fetch(`${API_URL}/auth/registrar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+<<<<<<< HEAD
         body: JSON.stringify({
+=======
+        body: JSON.stringify({ 
+>>>>>>> versao-estavel
           username,
           nome_completo: nomeCompleto,
           email,
           senha,
+<<<<<<< HEAD
           salario_base: converterParaFloat(salario),
+=======
+          salario_base: parseFloat(salario),
+>>>>>>> versao-estavel
         }),
       });
 
