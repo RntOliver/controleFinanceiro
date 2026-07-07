@@ -3,6 +3,7 @@ import "../styles/Dashboard.css";
 import Perfil from "./Perfil";
 import Sidebar from "./Sidebar";
 import DashboardMain from "./DashboardMain";
+import Metas from "./Metas";
 
 function Dashboard({ token, usernameLogado, isAdmin, onLogout }) {
   const [transacoes, setTransacoes] = useState([]);
@@ -84,15 +85,7 @@ function Dashboard({ token, usernameLogado, isAdmin, onLogout }) {
 
         {/* TELA 3: METAS */}
         {telaAtiva === "metas" && (
-          <div className="animacao-entrada">
-            <header className="topo-dashboard">
-              <h2>Metas Financeiras</h2>
-              <p>Planeje seus objetivos de curto, médio e longo prazo.</p>
-            </header>
-            <div className="bloco-generico-tela">
-              <p>🎯 Defina quanto você quer poupar este mês.</p>
-            </div>
-          </div>
+          <Metas token={token} />
         )}
 
         {/* TELAS 4 e 5: PLACEHOLDERS */}
