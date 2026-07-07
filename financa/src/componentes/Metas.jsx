@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import "./Metas.css";
+import "../styles/Meta.css";
 
 const API_URL = "https://rnt-finance-backend.onrender.com/metas";
 
