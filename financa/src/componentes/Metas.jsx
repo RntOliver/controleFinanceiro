@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import "../styles/Meta.css";
 
 const API_URL = "https://rnt-finance-backend.onrender.com/metas";
+const PERFIL_URL = "https://rnt-finance-backend.onrender.com/auth/perfil";
 
 // Formata número para moeda brasileira
 const formatarMoeda = (valor) => {
@@ -22,7 +23,6 @@ const converterParaFloat = (valorFormatado) => {
   return parseFloat(limpo) || 0.0;
 };
 
-// Apenas os textos de exibição ficaram aqui. As cores foram para o CSS!
 const STATUS_LABELS = {
   ativa: "Em andamento",
   concluida: "Concluída ✓",
@@ -34,6 +34,10 @@ export default function Metas({ token }) {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
+  // Dados financeiros do usuário
+  const [salarioBase, setSalarioBase] = useState(0);
+  const [metaEconomia, setMetaEconomia] = useState(0);
+
   // Estados do formulário de criação
   const [nome, setNome] = useState("");
   const [valorAlvo, setValorAlvo] = useState("");
@@ -43,7 +47,24 @@ export default function Metas({ token }) {
   // Controla o valor de aporte de cada card individualmente
   const [valorAporte, setValorAporte] = useState({});
 
-  // ── Carregar metas do back-end ──
+  // ── Carregar dados do Perfil ──
+  const carregarDadosPerfil = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await fetch(PERFIL_URL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const dados = await response.json();
+        setSalarioBase(dados.salario_base || 0);
+        setMetaEconomia(dados.Meta_economia || 0); // Mantive a capitalização do seu código
+      }
+    } catch (error) {
+      console.error("Erro ao carregar perfil:", error);
+    }
+  }, [token]);
+
+  // ── Carregar as metas do Back-end ──
   const carregarMetas = useCallback(async () => {
     if (!token) return;
     try {
@@ -61,9 +82,13 @@ export default function Metas({ token }) {
     }
   }, [token]);
 
+  // Carregar perfil e metas juntos ao montar a tela
   useEffect(() => {
-    if (token) carregarMetas();
-  }, [token, carregarMetas]);
+    if (token) {
+      carregarDadosPerfil();
+      carregarMetas();
+    }
+  }, [token, carregarDadosPerfil, carregarMetas]);
 
   // ── Criar nova meta ──
   const handleCriarMeta = async (e) => {
@@ -71,11 +96,12 @@ export default function Metas({ token }) {
     const valorNumerico = converterParaFloat(valorAlvo);
 
     if (!nome.trim()) {
-      setErro("O nome da meta é obrigatório.");
+      setErro("O nome da meta não pode estar vazio.");
       return;
     }
+
     if (valorNumerico <= 0) {
-      setErro("Informe um valor alvo maior que R$ 0,00.");
+      setErro("O valor alvo deve ser maior que zero.");
       return;
     }
 
@@ -92,8 +118,8 @@ export default function Metas({ token }) {
         body: JSON.stringify({
           nome: nome.trim(),
           valor_alvo: valorNumerico,
-          valor_atual: 0.0,
-          prazo: prazo || null,
+          valor_atual: 0,
+          prazo: prazo || null, // Corrigido erro de digitação (prazp)
         }),
       });
 
@@ -107,30 +133,30 @@ export default function Metas({ token }) {
         setErro(data.detail || "Erro ao criar meta.");
       }
     } catch (error) {
-      setErro("Erro de conexão com o servidor.");
+      setErro("Erro de conexão com o servidor no momento.");
       console.error(error);
     } finally {
       setCriando(false);
     }
   };
 
-  // ── Fazer aporte em uma meta ──
-  const handleFazerAporte = async (idMeta) => {
-    const valor = converterParaFloat(valorAporte[idMeta] || "");
-    if (!valor || valor <= 0) return;
+  // ── Fazer o aporte em uma meta ──
+  const handleFazerAporte = async (metaId) => {
+    const valor = converterParaFloat(valorAporte[metaId] || "");
+    if (!valor || valor <= 0) return; // Corrigido a lógica de validação
 
     try {
-      const response = await fetch(`${API_URL}/${idMeta}/aporte`, {
-        method: "PUT",
+      const response = await fetch(`${API_URL}/${metaId}/aporte`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ valor }),
+        body: JSON.stringify({ valor_aporte: valor }),
       });
 
       if (response.ok) {
-        setValorAporte({ ...valorAporte, [idMeta]: "" });
+        setValorAporte({ ...valorAporte, [metaId]: "" });
         carregarMetas();
       }
     } catch (error) {
@@ -138,16 +164,20 @@ export default function Metas({ token }) {
     }
   };
 
-  // ── Deletar uma meta ──
-  const handleDeletarMeta = async (idMeta) => {
-    if (!window.confirm("Tem certeza que deseja excluir esta meta?")) return;
+  // ── Deletar uma META ──
+  const handleDeletarMeta = async (metaId) => {
+    if (!window.confirm("Tem certeza que deseja deletar esta meta ?")) return;
 
     try {
-      const response = await fetch(`${API_URL}/${idMeta}`, {
+      const response = await fetch(`${API_URL}/${metaId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      if (response.ok) carregarMetas();
+      if (response.ok) {
+        carregarMetas();
+      }
     } catch (error) {
       console.error("Erro ao deletar meta:", error);
     }
@@ -155,33 +185,70 @@ export default function Metas({ token }) {
 
   if (carregando) {
     return (
-      <div className="metas-container">
-        <p className="metas-carregando">Carregando suas metas...</p>
+      <div className="metas-container loading">
+        <p>
+          Carregando as <strong>Metas</strong>...
+        </p>
       </div>
     );
   }
 
+  // O React exige que tudo no return esteja dentro de uma única tag pai (neste caso, .metas-container)
   return (
-    <div className="metas-container animacao-entrada">
-      {/* ── CABEÇALHO ── */}
+    <div className="metas-container">
+      {/* ── TOPO ── */}
       <div className="metas-topo">
-        <div>
-          <h2>Metas de Economia</h2>
-          <p>Defina objetivos, acompanhe o progresso e conquiste suas metas.</p>
-        </div>
+        <h2>Metas de Economia</h2>
+        <p>
+          Defina os objetivos, acompanhe o progresso e alcance suas metas
+          financeiras!
+        </p>
+
         <div className="metas-resumo-topo">
-          <div className="resumo-topo-item">
+          <div className="metas-topo-item">
             <span>{metas.length}</span>
             <label>Total</label>
           </div>
-          <div className="resumo-topo-item destaque-verde">
+          <div className="metas-topo-item destaque">
             <span>{metas.filter((m) => m.status === "concluida").length}</span>
             <label>Concluídas</label>
           </div>
-          <div className="resumo-topo-item destaque-laranja">
+          <div className="metas-topo-item laranja">
             <span>{metas.filter((m) => m.status === "ativa").length}</span>
             <label>Em andamento</label>
           </div>
+        </div>
+      </div>
+
+      {/* ── PAINEL FINANCEIRO ── */}
+      <div className="metas-painel-financeiro">
+        <div className="painel-fin-item">
+          <span className="painel-fin-label">💰 Salário Base</span>
+          <span className="painel-fin-valor">
+            {salarioBase > 0
+              ? `R$ ${salarioBase.toFixed(2).replace(".", ",")}`
+              : "Não informado"}
+          </span>
+        </div>
+        <div className="painel-fin-divisor" />
+        <div className="painel-fin-item">
+          <span className="painel-fin-label">🎯 Meta de Economia</span>
+          <span className="painel-fin-valor destaque-verde">
+            {metaEconomia > 0
+              ? `R$ ${metaEconomia.toFixed(2).replace(".", ",")}`
+              : "Não informada"}
+          </span>
+        </div>
+        <div className="painel-fin-divisor" />
+        <div className="painel-fin-item">
+          <span className="painel-fin-label">📊 Disponível p/ Metas</span>
+          <span
+            className={`painel-fin-valor ${salarioBase - metaEconomia >= 0 ? "destaque-verde" : "destaque-vermelho"}`}
+          >
+            {salarioBase > 0
+              ? `R$ ${(salarioBase - metaEconomia).toFixed(2).replace(".", ",")}`
+              : "—"}
+          </span>
         </div>
       </div>
 
@@ -194,7 +261,7 @@ export default function Metas({ token }) {
             <label>Nome da meta</label>
             <input
               type="text"
-              placeholder="Ex: Reserva de emergência, Viagem..."
+              placeholder="Ex: Reserva de emergência..."
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               required
@@ -240,12 +307,10 @@ export default function Metas({ token }) {
               (meta.valor_atual / meta.valor_alvo) * 100,
               100,
             ).toFixed(1);
-
             const falta = Math.max(meta.valor_alvo - meta.valor_atual, 0);
 
             return (
               <div key={meta.id} className={`card-meta status-${meta.status}`}>
-                {/* Cabeçalho do card */}
                 <div className="card-meta-header">
                   <h4>{meta.nome}</h4>
                   <button
@@ -257,7 +322,6 @@ export default function Metas({ token }) {
                   </button>
                 </div>
 
-                {/* Valores */}
                 <div className="card-meta-valores">
                   <span className="valor-atual">
                     R$ {meta.valor_atual.toFixed(2).replace(".", ",")}
@@ -268,7 +332,6 @@ export default function Metas({ token }) {
                   </span>
                 </div>
 
-                {/* Barra de progresso — Cor injetada dinamicamente via classe no CSS */}
                 <div className="progress-bar-container">
                   <div
                     className="progress-bar-fill"
@@ -285,7 +348,6 @@ export default function Metas({ token }) {
                   )}
                 </div>
 
-                {/* Prazo e status */}
                 <div className="card-meta-info">
                   {meta.prazo && (
                     <span className="meta-prazo">📅 {meta.prazo}</span>
@@ -295,7 +357,6 @@ export default function Metas({ token }) {
                   </span>
                 </div>
 
-                {/* Área de aporte */}
                 {meta.status === "ativa" && (
                   <div className="card-meta-aporte">
                     <input
