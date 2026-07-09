@@ -3,6 +3,24 @@ import "../styles/Login.css";
 
 const API_URL = "https://rnt-finance-backend.onrender.com";
 
+const formatarMoeda = (valor) => {
+  if (valor === undefined || valor === null || valor === "") return ""; 
+  const apenasNumeros = String(valor).replace(/\D/g, "");
+  if (!apenasNumeros) return ""; 
+  const opcoes = { minumimFractionDigits: 2, maximumFractionDigits: 2};
+  return `R$ ${new Intl.NumberFormat("pt-BR", opcoes).format(apenasNumeros / 100)}`; 
+};
+
+const converterParaFloat = (valorFormatado) => {
+  if (!valorFormatado) return 0; 
+  const limpo = valorFormatado 
+  .replace("R$", "")
+  .replace(/\./g, "")
+  .replace("," , ".")
+  .trim();
+  return parseFloat(limpo) || 0.0;
+}
+
 function Login({ onLoginSuccess }) {
   const [isCadastro, setIsCadastro] = useState(false);
   const [username, setUsername] = useState("");
@@ -35,7 +53,7 @@ function Login({ onLoginSuccess }) {
           nome_completo: nomeCompleto,
           email,
           senha,
-          salario_base: parseFloat(salario),
+          salario_base: converterParaFloat(salario),
         }),
       });
 
@@ -76,8 +94,8 @@ function Login({ onLoginSuccess }) {
       const papelAdmin = dados.is_admin ?? false;
 
       onLoginSuccess(token, userLogado, papelAdmin);
-    } catch (err) {
-      setMensagemErro(err.message);
+    } catch (error) {
+      setMensagemErro(error.message);
     }
   };
 
@@ -98,16 +116,40 @@ function Login({ onLoginSuccess }) {
 
         <form onSubmit={isCadastro ? executarCadastro : executarLogin}>
           {isCadastro && (
-            <div className="grupo-input">
-              <label>Nome de Usuário</label>
-              <input
-                type="text"
-                placeholder="Ex: João"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-              />
-            </div>
+            <>
+              <div className="grupo-input">
+                <label>Nome de Usuário</label>
+                <input
+                  type="text"
+                  placeholder="Ex: João"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="grupo-input">
+                <label>Nome Completo</label>
+                <input
+                  type="text"
+                  placeholder="Ex: João da Silva"
+                  value={nomeCompleto}
+                  onChange={(e) => setNomeCompleto(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="grupo-input">
+                <label>Salário base</label>
+                <input
+                  type="number"
+                  placeholder="Ex: 2500.00"
+                  value={salario}
+                  onChange={(e) => setSalario(formatarMoeda(e.target.value))}
+                  required
+                />
+              </div>
+            </>
           )}
 
           <div className="grupo-input">
@@ -139,14 +181,34 @@ function Login({ onLoginSuccess }) {
 
         <div className="alternador-tela">
           {isCadastro ? (
-            <p> Já possui uma conta?{" "}
-              <button onClick={() => { setIsCadastro(false); limparFormulario(); setMensagemErro("");
-                }} > Fazer Login </button>
+            <p>
+              {" "}
+              Já possui uma conta?{" "}
+              <button
+                onClick={() => {
+                  setIsCadastro(false);
+                  limparFormulario();
+                  setMensagemErro("");
+                }}
+              >
+                {" "}
+                Fazer Login{" "}
+              </button>
             </p>
           ) : (
-            <p> Novo por aqui?{" "}
-              <button onClick={() => { setIsCadastro(true); limparFormulario(); setMensagemErro(""); 
-              }}> Cadastre-se agora </button>
+            <p>
+              {" "}
+              Novo por aqui?{" "}
+              <button
+                onClick={() => {
+                  setIsCadastro(true);
+                  limparFormulario();
+                  setMensagemErro("");
+                }}
+              >
+                {" "}
+                Cadastre-se agora{" "}
+              </button>
             </p>
           )}
         </div>
