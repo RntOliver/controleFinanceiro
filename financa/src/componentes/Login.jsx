@@ -4,22 +4,22 @@ import "../styles/Login.css";
 const API_URL = "https://rnt-finance-backend.onrender.com";
 
 const formatarMoeda = (valor) => {
-  if (valor === undefined || valor === null || valor === "") return ""; 
+  if (valor === undefined || valor === null || valor === "") return "";
   const apenasNumeros = String(valor).replace(/\D/g, "");
-  if (!apenasNumeros) return ""; 
-  const opcoes = { minumimFractionDigits: 2, maximumFractionDigits: 2};
-  return `R$ ${new Intl.NumberFormat("pt-BR", opcoes).format(apenasNumeros / 100)}`; 
+  if (!apenasNumeros) return "";
+  const opcoes = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+  return `R$ ${new Intl.NumberFormat("pt-BR", opcoes).format(apenasNumeros / 100)}`;
 };
 
 const converterParaFloat = (valorFormatado) => {
-  if (!valorFormatado) return 0; 
-  const limpo = valorFormatado 
-  .replace("R$", "")
-  .replace(/\./g, "")
-  .replace("," , ".")
-  .trim();
+  if (!valorFormatado) return 0.0;
+  const limpo = valorFormatado
+    .replace("R$", "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .trim();
   return parseFloat(limpo) || 0.0;
-}
+};
 
 function Login({ onLoginSuccess }) {
   const [isCadastro, setIsCadastro] = useState(false);
@@ -33,10 +33,10 @@ function Login({ onLoginSuccess }) {
 
   const limparFormulario = () => {
     setUsername("");
-    setEmail("");
-    setSenha("");
     setNomeCompleto("");
     setSalario("");
+    setEmail("");
+    setSenha("");
   };
 
   const executarCadastro = async (e) => {
@@ -48,7 +48,7 @@ function Login({ onLoginSuccess }) {
       const resposta = await fetch(`${API_URL}/auth/registrar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           username,
           nome_completo: nomeCompleto,
           email,
@@ -94,8 +94,8 @@ function Login({ onLoginSuccess }) {
       const papelAdmin = dados.is_admin ?? false;
 
       onLoginSuccess(token, userLogado, papelAdmin);
-    } catch (error) {
-      setMensagemErro(error.message);
+    } catch (err) {
+      setMensagemErro(err.message);
     }
   };
 
@@ -121,13 +121,12 @@ function Login({ onLoginSuccess }) {
                 <label>Nome de Usuário</label>
                 <input
                   type="text"
-                  placeholder="Ex: João"
+                  placeholder="Ex: joaosilva"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>
-
               <div className="grupo-input">
                 <label>Nome Completo</label>
                 <input
@@ -138,12 +137,11 @@ function Login({ onLoginSuccess }) {
                   required
                 />
               </div>
-
               <div className="grupo-input">
-                <label>Salário base</label>
+                <label>Salário</label>
                 <input
-                  type="number"
-                  placeholder="Ex: 2500.00"
+                  type="text"
+                  placeholder="R$ 0,00"
                   value={salario}
                   onChange={(e) => setSalario(formatarMoeda(e.target.value))}
                   required
@@ -162,7 +160,6 @@ function Login({ onLoginSuccess }) {
               required
             />
           </div>
-
           <div className="grupo-input">
             <label>Senha de Segurança</label>
             <input
@@ -182,7 +179,6 @@ function Login({ onLoginSuccess }) {
         <div className="alternador-tela">
           {isCadastro ? (
             <p>
-              {" "}
               Já possui uma conta?{" "}
               <button
                 onClick={() => {
@@ -191,13 +187,11 @@ function Login({ onLoginSuccess }) {
                   setMensagemErro("");
                 }}
               >
-                {" "}
-                Fazer Login{" "}
+                Fazer Login
               </button>
             </p>
           ) : (
             <p>
-              {" "}
               Novo por aqui?{" "}
               <button
                 onClick={() => {
@@ -206,8 +200,7 @@ function Login({ onLoginSuccess }) {
                   setMensagemErro("");
                 }}
               >
-                {" "}
-                Cadastre-se agora{" "}
+                Cadastre-se agora
               </button>
             </p>
           )}
