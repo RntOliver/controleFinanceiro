@@ -4,7 +4,6 @@ import "./Metas.css";
 const API_URL = "https://rnt-finance-backend.onrender.com/metas";
 const PERFIL_URL = "https://rnt-finance-backend.onrender.com/auth/perfil";
 
-// Formata número para moeda brasileira
 const formatarMoeda = (valor) => {
   if (valor === undefined || valor === null || valor === "") return "";
   const apenasNumeros = String(valor).replace(/\D/g, "");
@@ -33,21 +32,14 @@ export default function Metas({ token }) {
   const [metas, setMetas] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
-
-  // Dados financeiros do usuário
   const [salarioBase, setSalarioBase] = useState(0);
   const [metaEconomia, setMetaEconomia] = useState(0);
-
-  // Estados do formulário de criação
   const [nome, setNome] = useState("");
   const [valorAlvo, setValorAlvo] = useState("");
   const [prazo, setPrazo] = useState("");
   const [criando, setCriando] = useState(false);
-
-  // Controla o valor de aporte de cada card individualmente
   const [valorAporte, setValorAporte] = useState({});
 
-  // ── Carregar dados do Perfil ──
   const carregarDadosPerfil = useCallback(async () => {
     if (!token) return;
     try {
@@ -57,14 +49,13 @@ export default function Metas({ token }) {
       if (response.ok) {
         const dados = await response.json();
         setSalarioBase(dados.salario_base || 0);
-        setMetaEconomia(dados.Meta_economia || 0); // Mantive a capitalização do seu código
+        setMetaEconomia(dados.meta_economia || 0);
       }
     } catch (error) {
       console.error("Erro ao carregar perfil:", error);
     }
   }, [token]);
 
-  // ── Carregar as metas do Back-end ──
   const carregarMetas = useCallback(async () => {
     if (!token) return;
     try {
@@ -82,7 +73,6 @@ export default function Metas({ token }) {
     }
   }, [token]);
 
-  // Carregar perfil e metas juntos ao montar a tela
   useEffect(() => {
     if (token) {
       carregarDadosPerfil();
@@ -90,7 +80,6 @@ export default function Metas({ token }) {
     }
   }, [token, carregarDadosPerfil, carregarMetas]);
 
-  // ── Criar nova meta ──
   const handleCriarMeta = async (e) => {
     e.preventDefault();
     const valorNumerico = converterParaFloat(valorAlvo);
@@ -99,7 +88,6 @@ export default function Metas({ token }) {
       setErro("O nome da meta não pode estar vazio.");
       return;
     }
-
     if (valorNumerico <= 0) {
       setErro("O valor alvo deve ser maior que zero.");
       return;
@@ -118,8 +106,8 @@ export default function Metas({ token }) {
         body: JSON.stringify({
           nome: nome.trim(),
           valor_alvo: valorNumerico,
-          valor_atual: 0,
-          prazo: prazo || null, // Corrigido erro de digitação (prazp)
+          valor_atual: 0.0,
+          prazo: prazo || null,
         }),
       });
 
@@ -133,30 +121,29 @@ export default function Metas({ token }) {
         setErro(data.detail || "Erro ao criar meta.");
       }
     } catch (error) {
-      setErro("Erro de conexão com o servidor no momento.");
+      setErro("Erro de conexão com o servidor.");
       console.error(error);
     } finally {
       setCriando(false);
     }
   };
 
-  // ── Fazer o aporte em uma meta ──
-  const handleFazerAporte = async (metaId) => {
-    const valor = converterParaFloat(valorAporte[metaId] || "");
-    if (!valor || valor <= 0) return; // Corrigido a lógica de validação
+  const handleFazerAporte = async (idMeta) => {
+    const valor = converterParaFloat(valorAporte[idMeta] || "");
+    if (!valor || valor <= 0) return;
 
     try {
-      const response = await fetch(`${API_URL}/${metaId}/aporte`, {
-        method: "POST",
+      const response = await fetch(`${API_URL}/${idMeta}/aporte`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ valor_aporte: valor }),
+        body: JSON.stringify({ valor }),
       });
 
       if (response.ok) {
-        setValorAporte({ ...valorAporte, [metaId]: "" });
+        setValorAporte({ ...valorAporte, [idMeta]: "" });
         carregarMetas();
       }
     } catch (error) {
@@ -164,20 +151,15 @@ export default function Metas({ token }) {
     }
   };
 
-  // ── Deletar uma META ──
-  const handleDeletarMeta = async (metaId) => {
-    if (!window.confirm("Tem certeza que deseja deletar esta meta ?")) return;
+  const handleDeletarMeta = async (idMeta) => {
+    if (!window.confirm("Tem certeza que deseja deletar esta meta?")) return;
 
     try {
-      const response = await fetch(`${API_URL}/${metaId}`, {
+      const response = await fetch(`${API_URL}/${idMeta}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.ok) {
-        carregarMetas();
-      }
+      if (response.ok) carregarMetas();
     } catch (error) {
       console.error("Erro ao deletar meta:", error);
     }
@@ -185,42 +167,40 @@ export default function Metas({ token }) {
 
   if (carregando) {
     return (
-      <div className="metas-container loading">
-        <p>
-          Carregando as <strong>Metas</strong>...
-        </p>
+      <div className="metas-container">
+        <p className="metas-carregando">Carregando suas metas...</p>
       </div>
     );
   }
 
-  // O React exige que tudo no return esteja dentro de uma única tag pai (neste caso, .metas-container)
   return (
-    <div className="metas-container">
-      {/* ── TOPO ── */}
+    <div className="metas-container animacao-entrada">
+      {/* CABEÇALHO */}
       <div className="metas-topo">
-        <h2>Metas de Economia</h2>
-        <p>
-          Defina os objetivos, acompanhe o progresso e alcance suas metas
-          financeiras!
-        </p>
-
+        <div>
+          <h2>Metas de Economia</h2>
+          <p>
+            Defina os objetivos, acompanhe o progresso e alcance suas metas
+            financeiras!
+          </p>
+        </div>
         <div className="metas-resumo-topo">
-          <div className="metas-topo-item">
+          <div className="resumo-topo-item">
             <span>{metas.length}</span>
             <label>Total</label>
           </div>
-          <div className="metas-topo-item destaque">
+          <div className="resumo-topo-item destaque-verde">
             <span>{metas.filter((m) => m.status === "concluida").length}</span>
             <label>Concluídas</label>
           </div>
-          <div className="metas-topo-item laranja">
+          <div className="resumo-topo-item destaque-laranja">
             <span>{metas.filter((m) => m.status === "ativa").length}</span>
             <label>Em andamento</label>
           </div>
         </div>
       </div>
 
-      {/* ── PAINEL FINANCEIRO ── */}
+      {/* PAINEL FINANCEIRO — dados vindos do Perfil */}
       <div className="metas-painel-financeiro">
         <div className="painel-fin-item">
           <span className="painel-fin-label">💰 Salário Base</span>
@@ -252,7 +232,7 @@ export default function Metas({ token }) {
         </div>
       </div>
 
-      {/* ── FORMULÁRIO DE CRIAÇÃO ── */}
+      {/* FORMULÁRIO DE CRIAÇÃO */}
       <div className="metas-form-card">
         <h3>🎯 Nova Meta</h3>
         {erro && <p className="metas-erro">⚠️ {erro}</p>}
@@ -261,13 +241,12 @@ export default function Metas({ token }) {
             <label>Nome da meta</label>
             <input
               type="text"
-              placeholder="Ex: Reserva de emergência..."
+              placeholder="Ex: Reserva de emergência, Viagem..."
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               required
             />
           </div>
-
           <div className="campo-grupo">
             <label>Valor alvo</label>
             <input
@@ -278,7 +257,6 @@ export default function Metas({ token }) {
               required
             />
           </div>
-
           <div className="campo-grupo">
             <label>Prazo (opcional)</label>
             <input
@@ -287,14 +265,13 @@ export default function Metas({ token }) {
               onChange={(e) => setPrazo(e.target.value)}
             />
           </div>
-
           <button type="submit" className="btn-criar-meta" disabled={criando}>
             {criando ? "Criando..." : "Adicionar Meta"}
           </button>
         </form>
       </div>
 
-      {/* ── LISTA DE CARDS DE METAS ── */}
+      {/* LISTA DE CARDS */}
       {metas.length === 0 ? (
         <div className="metas-vazio">
           <p>🎯 Você ainda não tem metas cadastradas.</p>
@@ -321,7 +298,6 @@ export default function Metas({ token }) {
                     🗑️
                   </button>
                 </div>
-
                 <div className="card-meta-valores">
                   <span className="valor-atual">
                     R$ {meta.valor_atual.toFixed(2).replace(".", ",")}
@@ -331,14 +307,12 @@ export default function Metas({ token }) {
                     R$ {meta.valor_alvo.toFixed(2).replace(".", ",")}
                   </span>
                 </div>
-
                 <div className="progress-bar-container">
                   <div
                     className="progress-bar-fill"
                     style={{ width: `${porcentagem}%` }}
                   />
                 </div>
-
                 <div className="card-meta-rodape-progresso">
                   <span>{porcentagem}% concluído</span>
                   {meta.status === "ativa" && (
@@ -347,7 +321,6 @@ export default function Metas({ token }) {
                     </span>
                   )}
                 </div>
-
                 <div className="card-meta-info">
                   {meta.prazo && (
                     <span className="meta-prazo">📅 {meta.prazo}</span>
@@ -356,7 +329,6 @@ export default function Metas({ token }) {
                     {STATUS_LABELS[meta.status] || STATUS_LABELS.ativa}
                   </span>
                 </div>
-
                 {meta.status === "ativa" && (
                   <div className="card-meta-aporte">
                     <input
