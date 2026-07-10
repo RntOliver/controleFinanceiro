@@ -1,17 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from app.auth.utils import UsuarioDB, obter_usuario_atual
 from app.metas.models import MetaDB
 from app.metas.schemas import MetaCreate, MetaAporte, MetaStatusUpdate
 
-router = APIRouter()
+# Definindo o prefixo de forma explícita para organizar o Swagger
+router = APIRouter(prefix="/metas", tags=["Metas"])
 
 @router.get("")
 async def listar_metas(usuario_atual: UsuarioDB = Depends(obter_usuario_atual), db: Session = Depends(get_db)):
     return db.query(MetaDB).filter(MetaDB.usuario_id == usuario_atual.id).all()
 
-@router.post("")
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def criar_meta(meta: MetaCreate, usuario_atual: UsuarioDB = Depends(obter_usuario_atual), db: Session = Depends(get_db)):
     nova_meta = MetaDB(
         nome=meta.nome,
@@ -25,6 +26,7 @@ async def criar_meta(meta: MetaCreate, usuario_atual: UsuarioDB = Depends(obter_
     db.refresh(nova_meta)
     return nova_meta
 
+# Mantido como PUT, pois altera uma informação existente dentro da meta
 @router.put("/{id_meta}/aporte")
 async def fazer_aporte(id_meta: int, aporte: MetaAporte, usuario_atual: UsuarioDB = Depends(obter_usuario_atual), db: Session = Depends(get_db)):
     meta = db.query(MetaDB).filter(MetaDB.id == id_meta, MetaDB.usuario_id == usuario_atual.id).first()

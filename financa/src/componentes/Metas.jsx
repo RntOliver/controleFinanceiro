@@ -135,19 +135,21 @@ export default function Metas({ token }) {
     try {
       const response = await fetch(`${API_URL}/${idMeta}/aporte`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+        headers:{
+          "Content-Type" : "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ valor }),
+        body: JSON.stringify({ valor_aporte: valor }),
       });
 
       if (response.ok) {
         setValorAporte({ ...valorAporte, [idMeta]: "" });
         carregarMetas();
+      } else {
+        console.error("Erro ao fazer aporte:");
       }
     } catch (error) {
-      console.error("Erro ao fazer aporte:", error);
+      console.error("Erro ao fazer aporte:", error)
     }
   };
 
